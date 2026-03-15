@@ -1,0 +1,94 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kawaz/timespec/src"
+
+// Values
+pub let day : Duration
+
+pub fn default_parse_datetime(String) -> Int64?
+
+pub fn epoch_to_iso8601(Int64, tz_offset? : TzOffset) -> String raise ParseError
+
+pub let hour : Duration
+
+pub fn local_tz_offset() -> TzOffset
+
+pub fn make_parse_datetime(default_tz_offset? : TzOffset) -> (String) -> Int64?
+
+pub let millisecond : Duration
+
+pub let minute : Duration
+
+pub fn parse_duration(String, default_sign? : Sign) -> Duration raise ParseError
+
+pub fn parse_range(input? : String, since? : String, until? : String, epoch? : EpochTime, default_sign? : Sign, default_tz_offset? : TzOffset, now? : () -> UInt64, swap? : Bool, parse_datetime? : (String) -> Int64?) -> TimeRange raise ParseError
+
+pub fn parse_timespec(String, epoch? : EpochTime, default_sign? : Sign, default_tz_offset? : TzOffset, now? : () -> UInt64, parse_datetime? : (String) -> Int64?) -> TimeSpec raise ParseError
+
+pub fn parse_tz_offset(String) -> TzOffset raise ParseError
+
+pub let second : Duration
+
+pub let week : Duration
+
+// Errors
+pub(all) suberror ParseError {
+  ParseError(String)
+}
+pub impl Show for ParseError
+
+// Types and methods
+pub(all) struct Duration(Int64)
+#deprecated
+pub fn Duration::inner(Self) -> Int64
+pub fn Duration::scale(Self, Int64) -> Self
+pub impl Add for Duration
+pub impl Compare for Duration
+pub impl Eq for Duration
+pub impl Neg for Duration
+pub impl Show for Duration
+pub impl Sub for Duration
+
+pub(all) struct EpochTime(Int64)
+pub fn EpochTime::add_duration(Self, Duration) -> Self
+#deprecated
+pub fn EpochTime::inner(Self) -> Int64
+pub impl Compare for EpochTime
+pub impl Eq for EpochTime
+pub impl Show for EpochTime
+
+pub(all) enum Sign {
+  Minus
+  Plus
+  Reject
+}
+pub impl Eq for Sign
+pub impl Show for Sign
+
+pub(all) struct TimeRange {
+  since : TimeSpec?
+  until : TimeSpec?
+}
+pub impl Eq for TimeRange
+pub impl Show for TimeRange
+
+pub(all) enum TimeSpec {
+  Absolute(EpochTime, Duration)
+  Relative(EpochTime, Duration)
+}
+pub fn TimeSpec::to_cli_string(Self, epoch? : EpochTime) -> String
+pub impl Eq for TimeSpec
+pub impl Show for TimeSpec
+
+pub(all) enum TzOffset {
+  Utc
+  Local
+  Hour(Int)
+  Min(Int)
+}
+pub impl Eq for TzOffset
+pub impl Show for TzOffset
+
+// Type aliases
+
+// Traits
+

@@ -1,4 +1,19 @@
-///| default_parse_datetime: ISO 8601 文字列をパースし epoch_ms を返す。パース失敗は None
+/// Parses an ISO 8601 datetime string and returns the epoch time in milliseconds.
+///
+/// This is the default `parse_datetime` implementation used by `parse_timespec`.
+/// It can be replaced with a custom parser via the `parse_datetime~` parameter.
+///
+/// Accepted formats include `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`,
+/// `YYYY-MM-DDTHH:MM:SS.sssZ`, and `YYYY-MM-DDTHH:MM:SS+HH:MM`.
+/// The `/` separator is also accepted in place of `-`.
+/// Inputs without timezone information are interpreted as UTC.
+///
+/// Parameters:
+///
+/// * `input` : The datetime string to parse.
+///
+/// Returns `Some(epoch_ms)` on success, or `None` if parsing fails.
+///|
 pub fn default_parse_datetime(input : String) -> Int64? {
   try {
     Some(parse_iso8601(input))
@@ -7,26 +22,137 @@ pub fn default_parse_datetime(input : String) -> Int64? {
   }
 }
 
-///| parse_iso8601: ISO 8601 文字列をパースし epoch_ms を返す
-fn parse_iso8601(input : String) -> Int64 raise ParseError {
+/// Creates a `parse_datetime` function that interprets TZ-less datetimes
+/// with the given default timezone offset.
+///
+/// ```
+/// let parse_jst = make_parse_datetime(default_tz_offset=Hour(9))
+/// parse_timespec("2026-03-15T12:00:00", parse_datetime=parse_jst)
+/// ```
+///|
+pub fn make_parse_datetime(
+  default_tz_offset~ : TzOffset = Utc
+) -> (String) -> Int64? {
+  fn(input) {
+    try {
+      Some(parse_iso8601(input, default_tz_offset~))
+    } catch {
+      _ => None
+    }
+  }
+}
+
+/// Parses an ISO 8601 datetime string and returns the epoch time in milliseconds
+/// along with the parsed timezone offset (if explicitly present in the input).
+///
+/// Handles date, time, fractional seconds, and timezone offset components.
+/// Also supports time-only inputs like `HH:MM[:SS[.mmm]][TZ]` (assumed 1970-01-01).
+/// Raises `ParseError` on malformed input.
+///
+/// Returns `(epoch_ms, Some(tz))` when the input has an explicit timezone,
+/// or `(epoch_ms, None)` when `default_tz_offset` was used as fallback.
+///|
+fn parse_iso8601_with_tz(
+  input : String,
+  default_tz_offset~ : TzOffset = Utc
+) -> (Int64, TzOffset?) raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
     raise ParseError("empty datetime string")
   }
   let mut pos = 0
+  // 先頭が4桁年かチェック
+  let is_time_only = not(is_four_digit_year_start(s))
+  let mut year = 1970
+  let mut month = 1
+  let mut day = 1
+  if is_time_only {
+    // time-only: 直接 HH:MM をパース（T セパレータ不要）
+    // 時(1-2桁)
+    let (h, p4) = parse_int_digits(s, pos, 1, 2)
+    pos = p4
+    // ':' が必須（time-only の判定根拠）
+    match s.get_char(pos) {
+      Some(':') => pos += 1
+      _ =>
+        raise ParseError(
+          "expected ':' at position " + pos.to_string() + " in: " + input,
+        )
+    }
+    let (mi, p5) = parse_int_digits(s, pos, 1, 2)
+    pos = p5
+    let hour = h
+    let min = mi
+    let mut sec = 0
+    let mut ms = 0
+    // 秒（省略可）
+    if pos < s.length() {
+      match s.get_char(pos) {
+        Some(':') => {
+          pos += 1
+          let (sc, p6) = parse_int_digits(s, pos, 1, 2)
+          sec = sc
+          pos = p6
+        }
+        _ => ()
+      }
+    }
+    // ミリ秒（オプション）
+    match s.get_char(pos) {
+      Some('.') => {
+        pos += 1
+        let (frac, frac_digits, p7) = parse_frac_digits(s, pos, 3)
+        ms = frac
+        let mut scale = frac_digits
+        while scale < 3 {
+          ms *= 10
+          scale += 1
+        }
+        pos = p7
+      }
+      _ => ()
+    }
+    // タイムゾーンオフセット（オプション）
+    let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos, input)
+    pos = new_pos
+    // 末尾に余分な文字がないか確認
+    if pos < s.length() {
+      raise ParseError(
+        "unexpected character at position " + pos.to_string() + " in: " + input,
+      )
+    }
+    let (tz, parsed_tz) = resolve_tz(has_tz, tz_offset_min, default_tz_offset)
+    let epoch = datetime_to_epoch(
+      year, month, day, hour, min, sec, ms, tz_offset=tz,
+    )
+    return (epoch, parsed_tz)
+  }
   // 年(4桁)
-  let (year, p1) = parse_int_digits(s, pos, 4, 4)
+  let (yr, p1) = parse_int_digits(s, pos, 4, 4)
+  year = yr
   pos = p1
-  // 区切り '-' or '/'
-  pos = skip_date_sep(s, pos)
-  // 月(1-2桁)
-  let (month, p2) = parse_int_digits(s, pos, 1, 2)
-  pos = p2
-  // 区切り '-' or '/'
-  pos = skip_date_sep(s, pos)
-  // 日(1-2桁)
-  let (day, p3) = parse_int_digits(s, pos, 1, 2)
-  pos = p3
+  // 月（省略可、デフォルト1）
+  let has_date_sep = match s.get_char(pos) {
+    Some('-') | Some('/') => true
+    _ => false
+  }
+  if pos < s.length() && (has_date_sep || is_digit_at(s, pos)) {
+    pos = skip_date_sep(s, pos)
+    let (m, p2) = parse_int_digits(s, pos, 1, 2)
+    month = m
+    pos = p2
+    // 日（省略可、デフォルト1）
+    if pos < s.length() && (match s.get_char(pos) {
+      Some('-') | Some('/') => true
+      _ => is_digit_at(s, pos) && not(has_date_sep)
+      // 区切りありなら区切りが必要、区切りなし(basic)なら数字続行
+    }) {
+      pos = skip_date_sep(s, pos)
+      let (d, p3) = parse_int_digits(s, pos, 1, 2)
+      day = d
+      pos = p3
+    }
+  }
   // 時分秒（オプション）
   let mut hour = 0
   let mut min = 0
@@ -40,18 +166,27 @@ fn parse_iso8601(input : String) -> Int64 raise ParseError {
         let (h, p4) = parse_int_digits(s, pos, 1, 2)
         hour = h
         pos = p4
-        // ':'
-        pos = skip_time_sep(s, pos)
-        // 分(1-2桁)
-        let (m, p5) = parse_int_digits(s, pos, 1, 2)
-        min = m
-        pos = p5
-        // ':'
-        pos = skip_time_sep(s, pos)
-        // 秒(1-2桁)
-        let (sc, p6) = parse_int_digits(s, pos, 1, 2)
-        sec = sc
-        pos = p6
+        // 分（省略可）
+        let has_time_sep = match s.get_char(pos) {
+          Some(':') => true
+          _ => false
+        }
+        if pos < s.length() && (has_time_sep || is_digit_at(s, pos)) {
+          pos = skip_time_sep(s, pos)
+          let (m, p5) = parse_int_digits(s, pos, 1, 2)
+          min = m
+          pos = p5
+          // 秒（省略可）
+          if pos < s.length() && (match s.get_char(pos) {
+            Some(':') => true
+            _ => is_digit_at(s, pos) && not(has_time_sep)
+          }) {
+            pos = skip_time_sep(s, pos)
+            let (sc, p6) = parse_int_digits(s, pos, 1, 2)
+            sec = sc
+            pos = p6
+          }
+        }
         // ミリ秒（オプション）
         match s.get_char(pos) {
           Some('.') => {
@@ -73,56 +208,139 @@ fn parse_iso8601(input : String) -> Int64 raise ParseError {
     }
   }
   // タイムゾーンオフセット（オプション）
-  let mut tz_offset_min = 0
-  if pos < s.length() {
-    match s.get_char(pos) {
-      Some('Z') | Some('z') => {
-        pos += 1
-        tz_offset_min = 0
-      }
-      Some('+') | Some('-') => {
-        let sign : Int = match s.get_char(pos) {
-          Some('+') => 1
-          _ => -1
-        }
-        pos += 1
-        let (tz_h, p8) = parse_int_digits(s, pos, 1, 2)
-        pos = p8
-        let mut tz_m = 0
-        if pos < s.length() {
-          match s.get_char(pos) {
-            Some(':') => {
-              pos += 1
-              let (m, p9) = parse_int_digits(s, pos, 1, 2)
-              tz_m = m
-              pos = p9
-            }
-            Some(c) =>
-              if Char::is_ascii_digit(c) {
-                let (m, p9) = parse_int_digits(s, pos, 2, 2)
-                tz_m = m
-                pos = p9
-              }
-            None => ()
-          }
-        }
-        tz_offset_min = sign * (tz_h * 60 + tz_m)
-      }
-      _ => ()
-    }
-  }
+  let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos, input)
+  pos = new_pos
   // 末尾に余分な文字がないか確認
   if pos < s.length() {
     raise ParseError(
       "unexpected character at position " + pos.to_string() + " in: " + input,
     )
   }
-  let epoch = datetime_to_epoch(year, month, day, hour, min, sec, ms)
-  // TZ オフセットを減算して UTC に変換
-  epoch - tz_offset_min.to_int64() * 60L * 1000L
+  let (tz, parsed_tz) = resolve_tz(has_tz, tz_offset_min, default_tz_offset)
+  let epoch = datetime_to_epoch(year, month, day, hour, min, sec, ms, tz_offset=tz)
+  (epoch, parsed_tz)
 }
 
-///| parse_int_digits: 指定桁数の整数をパースする
+/// Returns whether the string starts with 4 ASCII digits (i.e., a year).
+///|
+fn is_four_digit_year_start(s : StringView) -> Bool {
+  if s.length() < 4 {
+    return false
+  }
+  let mut i = 0
+  while i < 4 {
+    match s.get_char(i) {
+      Some(c) =>
+        if not(c.is_ascii_digit()) {
+          return false
+        }
+      None => return false
+    }
+    i += 1
+  }
+  true
+}
+
+/// Parses timezone suffix (Z, +HH:MM, -HH:MM, etc.) from position `pos`.
+///
+/// Returns `(has_tz, tz_offset_min, new_pos)`.
+///|
+fn parse_tz_suffix(
+  s : StringView,
+  pos : Int,
+  input : String
+) -> (Bool, Int, Int) raise ParseError {
+  let mut p = pos
+  let mut has_tz = false
+  let mut tz_offset_min = 0
+  if p < s.length() {
+    match s.get_char(p) {
+      Some('Z') | Some('z') => {
+        p += 1
+        tz_offset_min = 0
+        has_tz = true
+      }
+      Some('+') | Some('-') => {
+        let sign : Int = match s.get_char(p) {
+          Some('+') => 1
+          _ => -1
+        }
+        p += 1
+        let (tz_h, p8) = parse_int_digits(s, p, 1, 2)
+        p = p8
+        let mut tz_m = 0
+        if p < s.length() {
+          match s.get_char(p) {
+            Some(':') => {
+              p += 1
+              let (m, p9) = parse_int_digits(s, p, 1, 2)
+              tz_m = m
+              p = p9
+            }
+            Some(c) =>
+              if c.is_ascii_digit() {
+                let (m, p9) = parse_int_digits(s, p, 2, 2)
+                tz_m = m
+                p = p9
+              }
+            None => ()
+          }
+        }
+        tz_offset_min = sign * (tz_h * 60 + tz_m)
+        has_tz = true
+      }
+      _ => ()
+    }
+  }
+  ignore(input)
+  (has_tz, tz_offset_min, p)
+}
+
+/// Resolves timezone from parse results.
+///
+/// Returns `(tz_to_use, parsed_tz_option)` where `parsed_tz_option` is `Some`
+/// only when the input contained an explicit timezone.
+///|
+fn resolve_tz(
+  has_tz : Bool,
+  tz_offset_min : Int,
+  default_tz_offset : TzOffset
+) -> (TzOffset, TzOffset?) {
+  if has_tz {
+    let parsed_tz : TzOffset = if tz_offset_min == 0 {
+      Utc
+    } else if tz_offset_min % 60 == 0 {
+      Hour(tz_offset_min / 60)
+    } else {
+      Min(tz_offset_min)
+    }
+    (parsed_tz, Some(parsed_tz))
+  } else {
+    (default_tz_offset, None)
+  }
+}
+
+/// Parses an ISO 8601 datetime string and returns the epoch time in milliseconds.
+///
+/// Handles date, time, fractional seconds, and timezone offset components.
+/// Also supports time-only inputs like `HH:MM[:SS[.mmm]][TZ]` (assumed 1970-01-01).
+/// Raises `ParseError` on malformed input.
+///|
+fn parse_iso8601(
+  input : String,
+  default_tz_offset~ : TzOffset = Utc
+) -> Int64 raise ParseError {
+  parse_iso8601_with_tz(input, default_tz_offset~).0
+}
+
+/// Parses an integer from `min_digits` to `max_digits` decimal digits.
+///
+/// Returns a tuple of `(value, new_pos)`:
+/// - `value` : The parsed integer.
+/// - `new_pos` : The position immediately after the consumed digits.
+///
+/// Raises `ParseError` if fewer than `min_digits` are found.
+///|
 fn parse_int_digits(
   s : StringView,
   start : Int,
@@ -135,7 +353,7 @@ fn parse_int_digits(
   while count < max_digits && pos < s.length() {
     match s.get_char(pos) {
       Some(c) =>
-        if Char::is_ascii_digit(c) {
+        if c.is_ascii_digit() {
           value = value * 10 + (c.to_int() - '0'.to_int())
           pos += 1
           count += 1
@@ -156,7 +374,22 @@ fn parse_int_digits(
   (value, pos)
 }
 
-///| parse_frac_digits: 小数部をパースする。最大 max_digits 桁まで読み、(値, 読んだ桁数, 新位置) を返す
+/// Returns whether the character at position `pos` is an ASCII digit.
+///|
+fn is_digit_at(s : StringView, pos : Int) -> Bool {
+  match s.get_char(pos) {
+    Some(c) => c.is_ascii_digit()
+    None => false
+  }
+}
+
+/// Parses fractional digits up to `max_digits`, discarding any excess digits.
+///
+/// Returns a tuple of `(value, digits_read, new_pos)`:
+/// - `value` : The numeric value of the digits read (not yet scaled).
+/// - `digits_read` : The number of significant digits consumed (up to `max_digits`).
+/// - `new_pos` : The position after all digits (including discarded excess).
+///|
 fn parse_frac_digits(
   s : StringView,
   start : Int,
@@ -168,7 +401,7 @@ fn parse_frac_digits(
   while count < max_digits && pos < s.length() {
     match s.get_char(pos) {
       Some(c) =>
-        if Char::is_ascii_digit(c) {
+        if c.is_ascii_digit() {
           value = value * 10 + (c.to_int() - '0'.to_int())
           pos += 1
           count += 1
@@ -182,7 +415,7 @@ fn parse_frac_digits(
   while pos < s.length() {
     match s.get_char(pos) {
       Some(c) =>
-        if Char::is_ascii_digit(c) {
+        if c.is_ascii_digit() {
           pos += 1
         } else {
           break
@@ -193,7 +426,8 @@ fn parse_frac_digits(
   (value, count, pos)
 }
 
-///| skip_date_sep: 日付区切り文字('-' or '/')をスキップ
+/// Skips an optional date separator (`-` or `/`) at position `pos`.
+///|
 fn skip_date_sep(s : StringView, pos : Int) -> Int {
   match s.get_char(pos) {
     Some('-') | Some('/') => pos + 1
@@ -201,7 +435,8 @@ fn skip_date_sep(s : StringView, pos : Int) -> Int {
   }
 }
 
-///| skip_time_sep: 時刻区切り文字(':')をスキップ
+/// Skips an optional time separator (`:`) at position `pos`.
+///|
 fn skip_time_sep(s : StringView, pos : Int) -> Int {
   match s.get_char(pos) {
     Some(':') => pos + 1
@@ -209,7 +444,12 @@ fn skip_time_sep(s : StringView, pos : Int) -> Int {
   }
 }
 
-///| datetime_to_epoch: 日付時刻を正規化し epoch_ms に変換（Go mktime スタイル）
+/// Converts date-time components to epoch milliseconds with normalization.
+///
+/// Uses Go-style mktime normalization: out-of-range values for seconds, minutes,
+/// hours, days, and months are carried over to the next higher unit.
+/// The timezone offset is subtracted to produce a UTC epoch value.
+///|
 fn datetime_to_epoch(
   year : Int,
   month : Int,
@@ -217,13 +457,25 @@ fn datetime_to_epoch(
   hour : Int,
   min : Int,
   sec : Int,
-  ms : Int
+  ms : Int,
+  tz_offset~ : TzOffset = Utc
 ) -> Int64 {
+  // TzOffset → 分単位オフセットに変換して UTC 化
+  let tz_resolved = match tz_offset {
+    Local => local_tz_offset()
+    _ => tz_offset
+  }
+  let offset_min = match tz_resolved {
+    Utc => 0
+    Hour(h) => h * 60
+    Min(m) => m
+    Local => 0 // unreachable
+  }
   let mut y = year
   let mut mo = month
   let mut d = day
   let mut h = hour
-  let mut mi = min
+  let mut mi = min - offset_min
   let mut s = sec
   // 1. 秒→分→時→日の繰り上げ/繰り下げ
   mi += floor_div(s, 60)
@@ -260,28 +512,38 @@ fn datetime_to_epoch(
   ms.to_int64()
 }
 
-///| days_from_epoch: 1970-01-01 からの通算日数を計算
+/// Computes the number of days from 1970-01-01 for a given civil date.
+/// Uses Howard Hinnant's algorithm.
+///|
 fn days_from_epoch(year : Int, month : Int, day : Int) -> Int {
-  // 年の通算日数
-  let mut days = 0
-  if year >= 1970 {
-    for yr in 1970..<year {
-      days += if is_leap_year(yr) { 366 } else { 365 }
-    }
-  } else {
-    for yr in year..<1970 {
-      days -= if is_leap_year(yr) { 366 } else { 365 }
-    }
-  }
-  // 月の通算日数
-  for m in 1..<month {
-    days += days_in_month(year, m)
-  }
-  // 日を加算
-  days + day - 1
+  let y = if month <= 2 { year - 1 } else { year }
+  let era = (if y >= 0 { y } else { y - 399 }) / 400
+  let yoe = y - era * 400
+  let m = month
+  let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + day - 1
+  let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+  era * 146097 + doe - 719468
 }
 
-///| days_in_month: 月の日数（うるう年対応）
+/// Converts days since 1970-01-01 back to a civil date `(year, month, day)`.
+/// Uses Howard Hinnant's algorithm.
+///|
+fn epoch_days_to_civil(total_days : Int) -> (Int, Int, Int) {
+  let z = total_days + 719468
+  let era = (if z >= 0 { z } else { z - 146096 }) / 146097
+  let doe = z - era * 146097
+  let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+  let y = yoe + era * 400
+  let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+  let mp = (5 * doy + 2) / 153
+  let d = doy - (153 * mp + 2) / 5 + 1
+  let m = if mp < 10 { mp + 3 } else { mp - 9 }
+  let year = if m <= 2 { y + 1 } else { y }
+  (year, m, d)
+}
+
+/// Returns the number of days in the given month, accounting for leap years.
+///|
 fn days_in_month(year : Int, month : Int) -> Int {
   match month {
     1 => 31
@@ -300,23 +562,36 @@ fn days_in_month(year : Int, month : Int) -> Int {
   }
 }
 
-///| is_leap_year: うるう年判定
+/// Returns whether the given year is a leap year.
+///|
 fn is_leap_year(year : Int) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
-///| epoch_to_iso8601: epoch_ms を ISO 8601 文字列に変換
+/// Converts epoch milliseconds to an ISO 8601 datetime string.
+///
+/// Parameters:
+///
+/// * `epoch_ms` : Milliseconds since 1970-01-01T00:00:00Z.
+/// * `tz_offset~` : The timezone offset to apply. Defaults to `Utc`.
+///   With `Utc`, the output ends in `Z`. With `Hour(9)`, it ends in `+09:00`.
+///   With `Local`, the system timezone is queried at runtime.
+///
+/// Returns a formatted string like `"2025-03-15T00:56:14Z"` or
+/// `"2025-03-15T09:56:14+09:00"`. Milliseconds are included only when non-zero
+/// (e.g. `"2025-03-15T00:56:14.123Z"`).
+///|
 pub fn epoch_to_iso8601(
   epoch_ms : Int64,
-  tz~ : TzOffset = Utc
+  tz_offset~ : TzOffset = Utc
 ) -> String raise ParseError {
-  match tz {
-    Local =>
-      raise ParseError("Local timezone is not supported yet (requires FFI)")
+  // Local はシステムの TZ オフセットに解決して再帰呼び出し
+  match tz_offset {
+    Local => return epoch_to_iso8601(epoch_ms, tz_offset=local_tz_offset())
     _ => ()
   }
   // TzOffset に応じて epoch_ms にオフセットを加算
-  let offset_min : Int = match tz {
+  let offset_min : Int = match tz_offset {
     Utc => 0
     Hour(h) => h * 60
     Min(m) => m
@@ -341,34 +616,8 @@ pub fn epoch_to_iso8601(
   let hour = remaining / 3600
   let min = (remaining % 3600) / 60
   let sec = remaining % 60
-  // total_days から年月日を逆算（1970-01-01 = day 0）
-  let mut year = 1970
-  if total_days >= 0 {
-    while true {
-      let dy = if is_leap_year(year) { 366 } else { 365 }
-      if total_days < dy {
-        break
-      }
-      total_days -= dy
-      year += 1
-    }
-  } else {
-    while total_days < 0 {
-      year -= 1
-      let dy = if is_leap_year(year) { 366 } else { 365 }
-      total_days += dy
-    }
-  }
-  let mut month = 1
-  while true {
-    let dm = days_in_month(year, month)
-    if total_days < dm {
-      break
-    }
-    total_days -= dm
-    month += 1
-  }
-  let day = total_days + 1
+  // total_days から年月日を逆算（Howard Hinnant's algorithm）
+  let (year, month, day) = epoch_days_to_civil(total_days)
   // 文字列構築
   let buf = StringBuilder::new()
   buf.write_string(pad4(year))
@@ -388,7 +637,7 @@ pub fn epoch_to_iso8601(
     buf.write_string(pad3(ms))
   }
   // TzOffset サフィックス
-  match tz {
+  match tz_offset {
     Utc => buf.write_char('Z')
     Hour(h) => {
       if h >= 0 {
@@ -417,7 +666,8 @@ pub fn epoch_to_iso8601(
   buf.to_string()
 }
 
-///| pad2: 2桁ゼロ埋め
+/// Zero-pads an integer to 2 digits.
+///|
 fn pad2(n : Int) -> String {
   if n < 10 {
     "0" + n.to_string()
@@ -426,7 +676,8 @@ fn pad2(n : Int) -> String {
   }
 }
 
-///| pad3: 3桁ゼロ埋め
+/// Zero-pads an integer to 3 digits.
+///|
 fn pad3(n : Int) -> String {
   if n < 10 {
     "00" + n.to_string()
@@ -437,9 +688,12 @@ fn pad3(n : Int) -> String {
   }
 }
 
-///| pad4: 4桁ゼロ埋め（年用）
+/// Zero-pads an integer to 4 digits. Handles negative values for BCE years.
+///|
 fn pad4(n : Int) -> String {
-  if n < 10 {
+  if n < 0 {
+    "-" + pad4(-n)
+  } else if n < 10 {
     "000" + n.to_string()
   } else if n < 100 {
     "00" + n.to_string()
@@ -450,7 +704,8 @@ fn pad4(n : Int) -> String {
   }
 }
 
-///| floor_div: 負値対応の整数除算（Python 式）
+/// Floor division that rounds toward negative infinity (Python-style).
+///|
 fn floor_div(a : Int, b : Int) -> Int {
   if (a >= 0) == (b > 0) {
     a / b
@@ -459,7 +714,8 @@ fn floor_div(a : Int, b : Int) -> Int {
   }
 }
 
-///| floor_mod: 負値対応の剰余（Python 式）
+/// Floor modulo that always returns a non-negative result (Python-style).
+///|
 fn floor_mod(a : Int, b : Int) -> Int {
   a - floor_div(a, b) * b
 }

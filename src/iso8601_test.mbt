@@ -80,14 +80,14 @@ test "epoch_to_iso8601: with milliseconds" {
 
 ///|
 test "epoch_to_iso8601: with Hour offset" {
-  inspect(@src.epoch_to_iso8601(1704067200000L, tz=Hour(9)), content=(
+  inspect(@src.epoch_to_iso8601(1704067200000L, tz_offset=Hour(9)), content=(
     #|2024-01-01T09:00:00+09:00
   ))
 }
 
 ///|
 test "epoch_to_iso8601: with Min offset" {
-  inspect(@src.epoch_to_iso8601(1704067200000L, tz=Min(330)), content=(
+  inspect(@src.epoch_to_iso8601(1704067200000L, tz_offset=Min(330)), content=(
     #|2024-01-01T05:30:00+05:30
   ))
 }
@@ -172,4 +172,87 @@ test "epoch_to_iso8601 roundtrip" {
     ))
     None => assert_true(false)
   }
+}
+
+///|
+test "parse flexible date formats" {
+let tz: TzOffset = Hour(9)
+println("Testing with timezone offset: " + (tz == Hour(9)))
+
+  // 1-2桁の月日
+  let a = @src.default_parse_datetime("2026-3-1")
+  let b = @src.default_parse_datetime("2026-03-01")
+  assert_true(a == b)
+  // スラッシュ + 1桁
+  let c = @src.default_parse_datetime("2026/3/1")
+  assert_true(a == c)
+  // 1桁時分秒
+  let d = @src.default_parse_datetime("2026-3-1T9:5:3")
+  let e = @src.default_parse_datetime("2026-03-01T09:05:03")
+  assert_true(d == e)
+  // 区切りなし (YYYYMMDD)
+  let f = @src.default_parse_datetime("20260301")
+  assert_true(a == f)
+}
+
+///|
+test "parse compact datetime formats" {
+  // YYYYMMDDTHHmmss
+  let b = @src.default_parse_datetime("20260301T120000")
+  let c = @src.default_parse_datetime("2026-03-01T12:00:00")
+  inspect(b, content=(
+    #|Some(1772366400000)
+  ))
+  assert_true(b == c)
+  // YYYYMMDDTHHmmssZ
+  let d = @src.default_parse_datetime("20260301T120000Z")
+  assert_true(d == c)
+  // YYYYMMDD HHmmss
+  let e = @src.default_parse_datetime("20260301 120000")
+  assert_true(e == c)
+  // YYYYMMDDTHHmm (秒なし)
+  let f = @src.default_parse_datetime("20260301T1200")
+  let g = @src.default_parse_datetime("2026-03-01T12:00:00")
+  assert_true(f == g)
+}
+
+///|
+test "parse partial datetime" {
+  inspect(@src.default_parse_datetime("2026"), content=(
+    #|Some(1767225600000)
+
+  ))
+  inspect(@src.default_parse_datetime("202603"), content=(
+    #|Some(1772323200000)
+
+  ))
+  inspect(@src.default_parse_datetime("2026-03"), content=(
+    #|Some(1772323200000)
+
+  ))
+}
+
+///|
+test "parse time-only formats" {
+  // HH:MM
+  let a = @src.default_parse_datetime("10:30")
+  let b = @src.default_parse_datetime("1970-01-01T10:30:00")
+  assert_true(a == b)
+  // HH:MM:SS
+  let c = @src.default_parse_datetime("10:30:45")
+  let d = @src.default_parse_datetime("1970-01-01T10:30:45")
+  assert_true(c == d)
+  // HH:MM:SS.mmm
+  let e = @src.default_parse_datetime("10:30:45.500")
+  let f = @src.default_parse_datetime("1970-01-01T10:30:45.500")
+  assert_true(e == f)
+  // HH:MM with TZ
+  let g = @src.default_parse_datetime("10:30+09:00")
+  let h = @src.default_parse_datetime("1970-01-01T10:30:00+09:00")
+  assert_true(g == h)
+  // 00:00Z
+  let i = @src.default_parse_datetime("00:00Z")
+  inspect(i, content=(
+    #|Some(0)
+  ))
 }

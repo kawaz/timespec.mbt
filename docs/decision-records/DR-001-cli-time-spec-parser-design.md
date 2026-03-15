@@ -3,6 +3,12 @@
 - **日付**: 2026-03-15
 - **ステータス**: Accepted
 
+> **注意**: この DR は初期設計時の記録です。以下の DR により一部が上書きされています:
+> - DR-002: EpochTime 型の導入、TimeSpec を (EpochTime, Duration) に変更
+> - DR-003: カスタム epoch パラメータの追加
+> - DR-004: ms 精度への簡素化（MsNs 廃止、us/ns 廃止、newtype 化）
+> - DR-006: ParseContext 廃止、parse_range を since~/until~ 方式に変更、アンカー解決を Mixed ルールのみに
+
 ## 概要
 
 MoonBit で CLI の `--since` / `--until` 向け柔軟な日時指定文字列パーサライブラリを設計する。広大な日時ライブラリではなく、CLI 用途に特化した軽量パーサ。
@@ -63,7 +69,7 @@ CLI 引数の再シリアライズにおいて、意図の区別が必要。
 
 - `Relative` → `--since -8m` として復元（「やり方」の共有。実行するたび結果が変わる）
 - `Absolute` → `--since 2025-03-15T00:56:14Z` として復元（「結果」の共有。誰がいつ実行しても同じ）
-- `@` は「このコマンドをピン留めする」宣言として機能する
+- `@` は「この値をピン留めする」宣言として機能する
 
 ---
 
@@ -121,7 +127,7 @@ pub(all) struct TimeRange {
 | 入力 | 計算結果 |
 |---|---|
 | `s @5m~+3m` | since=now-5m, until=since+3m=now-2m |
-| `s @5m~-3m` | since=now-5m, until=since-3m=now-8m（反転OK） |
+| `s @5m~-3m` | since=now-5m, until=since-3m=now-8m（反転OK）|
 
 ### 4.4 swap オプション
 
