@@ -1,0 +1,9 @@
+{
+  "name": "kawaz/timespec",
+  "version": "0.1.0",
+  "readme": "README.md",
+  "repository": "https://github.com/kawaz/time.mbt",
+  "license": "MIT",
+  "keywords": ["time", "duration", "cli", "parser"],
+  "description": "CLI-oriented time specification parser for MoonBit"
+}
