@@ -367,16 +367,15 @@ Mixed の場合:
 組み込みの最小限パーサ。プラガブルに差し替え可能。
 
 受け入れ形式:
-- `YYYY-MM-DD` — TZ なし → **UTC として解釈**
-- `YYYY-MM-DDTHH:MM:SS` — TZ なし → **UTC として解釈**
+- `YYYY-MM-DD` — TZ なし → **Local として解釈**（デフォルト）
+- `YYYY-MM-DDTHH:MM:SS` — TZ なし → **Local として解釈**
 - `YYYY-MM-DDTHH:MM:SSZ`
 - `YYYY-MM-DDTHH:MM:SS±HH:MM`
 - `HH:MM[:SS[.mmm]][TZ]` — time-only（日付は 1970-01-01 として解釈）
 - 区切り `/` も許容
 
-**TZ なし日時の扱い**: デフォルトパーサは TZ 情報のない入力を **UTC** として解釈する。
-`default_tz_offset~` パラメータで変更可能（`parse_timespec`、`parse_range` から伝播）。
-これにより `Absolute` の「誰がいつ実行しても同じ結果」という保証が維持される。
+**TZ なし日時の扱い**: デフォルトでは TZ 情報のない入力を **ローカルタイムゾーン** として解釈する（ISO 8601 準拠）。
+`default_tz_offset~` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
 ローカル時刻として解釈したい場合は、`default_tz_offset~=Local` を指定するか、
 `parse_datetime~` で TZ 付加するカスタムパーサを差し込む。
 
