@@ -88,7 +88,7 @@ pub(all) enum TzOffset {
 ```moonbit
 pub(all) suberror ParseError {
   ParseError(String)
-}
+} derive(Eq, Show)
 ```
 
 ## 公開 API
@@ -159,6 +159,9 @@ pub fn Duration::scale(self : Duration, n : Int64) -> Duration
 
 // EpochTime に Duration を加算
 pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime
+
+// TzOffset の意味的等価比較（分単位で解決して比較。Hour(9) == Min(540)）
+pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 ```
 
 ## パース仕様

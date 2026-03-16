@@ -176,9 +176,6 @@ test "epoch_to_iso8601 roundtrip" {
 
 ///|
 test "parse flexible date formats" {
-let tz: TzOffset = Hour(9)
-println("Testing with timezone offset: " + (tz == Hour(9)))
-
   // 1-2桁の月日
   let a = @src.default_parse_datetime("2026-3-1")
   let b = @src.default_parse_datetime("2026-03-01")

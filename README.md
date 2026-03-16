@@ -66,6 +66,7 @@ pub(all) struct TimeRange {
 
 pub(all) enum TzOffset { Utc; Local; Hour(Int); Min(Int) }
 pub(all) enum Sign { Minus; Plus; Reject }
+pub(all) suberror ParseError { ParseError(String) } derive(Eq, Show)
 ```
 
 ## Duration Constants
