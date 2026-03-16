@@ -364,8 +364,6 @@ Mixed の場合:
 
 **TZ なし日時の扱い**: デフォルトでは TZ 情報のない入力を **ローカルタイムゾーン** として解釈する（ISO 8601 準拠）。
 `default_tz_offset~` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
-ローカル時刻として解釈したい場合は、`default_tz_offset~=Local` を指定するか、
-`parse_datetime~` で TZ 付加するカスタムパーサを差し込む。
 
 ### 日付正規化
 
