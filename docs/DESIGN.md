@@ -291,18 +291,9 @@ parse_range(input="~3m", default_sign=Minus)    // since なし, until="3m"
 parse_range(input="5m", default_sign=Minus)     // ~ なし → since="5m"
 ```
 
-**方式3: 混合** — `since~` / `until~` が明示されていれば `input~` より優先
+`input~` と `since~`/`until~` の同時指定は `ParseError`。
 
-```moonbit
-// input を上書き
-parse_range(input="99d~99d", since="5m", until="3m")  // since="5m", until="3m" が使われる
-```
-
-#### 優先順位
-
-1. `since~` / `until~` が空でなければそれを使う
-2. 両方空のとき `input~` があれば `~` で分割して展開
-3. 全て空なら `TimeRange { since: None, until: None }`
+#### 動作
 
 #### パース動作
 

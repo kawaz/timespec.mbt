@@ -214,3 +214,11 @@ test "parse_timespec: @-100 negative raw epoch" {
 
   ))
 }
+
+///|
+test "parse_timespec: time-of-day single digit" {
+  let now_fn = fn() -> UInt64 { 1_000_000_000UL }
+  let a = @src.parse_timespec("@1:0", now=now_fn, default_tz_offset=Utc)
+  let b = @src.parse_timespec("@01:00", now=now_fn, default_tz_offset=Utc)
+  assert_true(a == b)
+}

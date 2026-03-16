@@ -67,10 +67,16 @@ pub fn parse_range(
   swap~ : Bool = false,
   parse_datetime~ : (String) -> Int64? = default_parse_datetime
 ) -> TimeRange raise ParseError {
-  // input~ から since/until を展開（明示 since~/until~ が優先）
+  // input~ と since~/until~ の排他チェック
   let mut since = since
   let mut until = until
-  if input.length() > 0 && since.length() == 0 && until.length() == 0 {
+  if input.length() > 0 && (since.length() > 0 || until.length() > 0) {
+    raise ParseError(
+      "cannot specify both input~ and since~/until~ in parse_range",
+    )
+  }
+  // input~ から since/until を展開
+  if input.length() > 0 {
     match input.split_once("~") {
       Some((s, u)) => {
         since = s.to_string()

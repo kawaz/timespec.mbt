@@ -225,13 +225,12 @@ test "parse_range: input~ no tilde (since only)" {
 }
 
 ///|
-test "parse_range: explicit since~/until~ overrides input~" {
-  let r = @src.parse_range(
-    input="99d~99d", since="5m", until="3m",
+test "parse_range: input and since/until together is error" {
+  let r = try? @src.parse_range(
+    input="99d~99d", since="5m",
     now=range_test_now, default_sign=Minus,
   )
-  let expected = @src.parse_range(since="5m", until="3m", now=range_test_now, default_sign=Minus)
-  assert_true(r == expected)
+  assert_true(r is Err(_))
 }
 
 ///|
