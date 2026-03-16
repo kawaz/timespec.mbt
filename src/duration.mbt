@@ -385,57 +385,57 @@ fn parse_unit(
       match s.get_char(pos + 1) {
         Some('e') =>
           if try_match_word(s, pos, "weeks") {
-            (604_800_000L, pos + 5)
+            (week.0, pos + 5)
           } else if try_match_word(s, pos, "week") {
-            (604_800_000L, pos + 4)
+            (week.0, pos + 4)
           } else {
             raise ParseError(
               "unknown unit at position " + pos.to_string() + " in: " +
               s.to_string(),
             )
           }
-        _ => (604_800_000L, pos + 1) // 'w'
+        _ => (week.0, pos + 1) // 'w'
       }
     Some('d') =>
       match s.get_char(pos + 1) {
         Some('a') =>
           if try_match_word(s, pos, "days") {
-            (86_400_000L, pos + 4)
+            (day.0, pos + 4)
           } else if try_match_word(s, pos, "day") {
-            (86_400_000L, pos + 3)
+            (day.0, pos + 3)
           } else {
             raise ParseError(
               "unknown unit at position " + pos.to_string() + " in: " +
               s.to_string(),
             )
           }
-        _ => (86_400_000L, pos + 1) // 'd'
+        _ => (day.0, pos + 1) // 'd'
       }
     Some('h') =>
       match s.get_char(pos + 1) {
         Some('o') =>
           if try_match_word(s, pos, "hours") {
-            (3_600_000L, pos + 5)
+            (hour.0, pos + 5)
           } else if try_match_word(s, pos, "hour") {
-            (3_600_000L, pos + 4)
+            (hour.0, pos + 4)
           } else {
             raise ParseError(
               "unknown unit at position " + pos.to_string() + " in: " +
               s.to_string(),
             )
           }
-        _ => (3_600_000L, pos + 1) // 'h'
+        _ => (hour.0, pos + 1) // 'h'
       }
     Some('m') =>
       match s.get_char(pos + 1) {
         Some('s') => (1L, pos + 2) // 'ms'
         Some('i') =>
           if try_match_word(s, pos, "minutes") {
-            (60_000L, pos + 7)
+            (minute.0, pos + 7)
           } else if try_match_word(s, pos, "minute") {
-            (60_000L, pos + 6)
+            (minute.0, pos + 6)
           } else if try_match_word(s, pos, "min") {
-            (60_000L, pos + 3)
+            (minute.0, pos + 3)
           } else if try_match_word(s, pos, "milliseconds") {
             (1L, pos + 12)
           } else if try_match_word(s, pos, "millisecond") {
@@ -446,24 +446,24 @@ fn parse_unit(
               s.to_string(),
             )
           }
-        _ => (60_000L, pos + 1) // 'm'
+        _ => (minute.0, pos + 1) // 'm'
       }
     Some('s') =>
       match s.get_char(pos + 1) {
         Some('e') =>
           if try_match_word(s, pos, "seconds") {
-            (1_000L, pos + 7)
+            (second.0, pos + 7)
           } else if try_match_word(s, pos, "second") {
-            (1_000L, pos + 6)
+            (second.0, pos + 6)
           } else if try_match_word(s, pos, "sec") {
-            (1_000L, pos + 3)
+            (second.0, pos + 3)
           } else {
             raise ParseError(
               "unknown unit at position " + pos.to_string() + " in: " +
               s.to_string(),
             )
           }
-        _ => (1_000L, pos + 1) // 's'
+        _ => (second.0, pos + 1) // 's'
       }
     Some('u') =>
       match s.get_char(pos + 1) {

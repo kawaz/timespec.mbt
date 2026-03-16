@@ -14,36 +14,36 @@ fn format_duration(d : Duration) -> String {
     return buf.to_string()
   }
   // weeks
-  let weeks = remain / 604_800_000L
-  remain = remain % 604_800_000L
+  let weeks = remain / week.0
+  remain = remain % week.0
   if weeks > 0L {
     buf.write_string(weeks.to_string())
     buf.write_char('w')
   }
   // days
-  let days = remain / 86_400_000L
-  remain = remain % 86_400_000L
+  let days = remain / day.0
+  remain = remain % day.0
   if days > 0L {
     buf.write_string(days.to_string())
     buf.write_char('d')
   }
   // hours
-  let hours = remain / 3_600_000L
-  remain = remain % 3_600_000L
+  let hours = remain / hour.0
+  remain = remain % hour.0
   if hours > 0L {
     buf.write_string(hours.to_string())
     buf.write_char('h')
   }
   // minutes
-  let minutes = remain / 60_000L
-  remain = remain % 60_000L
+  let minutes = remain / minute.0
+  remain = remain % minute.0
   if minutes > 0L {
     buf.write_string(minutes.to_string())
     buf.write_char('m')
   }
   // seconds
-  let seconds = remain / 1_000L
-  remain = remain % 1_000L
+  let seconds = remain / second.0
+  remain = remain % second.0
   if seconds > 0L {
     buf.write_string(seconds.to_string())
     buf.write_char('s')
@@ -75,12 +75,7 @@ pub fn TimeSpec::to_cli_string(
   match self {
     Absolute(epoch_time, _) => {
       let ms = epoch_time.0 + epoch.0
-      epoch_to_iso8601(ms) catch {
-        _ =>
-          panic()
-          // Design rationale: epoch_to_iso8601 with default UTC TZ never fails.
-          // Local TZ (the only error path) is never used here.
-      }
+      epoch_to_iso8601(ms)
     }
     Relative(_, duration) => format_duration(duration)
   }
