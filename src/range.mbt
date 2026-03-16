@@ -1,21 +1,3 @@
-/// Extracts the epoch milliseconds from a `TimeSpec`, regardless of variant.
-///|
-fn timespec_epoch(ts : TimeSpec) -> Int64 {
-  match ts {
-    Absolute(e, _) => e.0
-    Relative(e, _) => e.0
-  }
-}
-
-/// Returns whether the `TimeSpec` is an `Absolute` variant.
-///|
-fn is_absolute(ts : TimeSpec) -> Bool {
-  match ts {
-    Absolute(_, _) => true
-    Relative(_, _) => false
-  }
-}
-
 /// Recalculates a `Relative` TimeSpec's epoch using `anchor_epoch` as the base
 /// instead of `now`. `Absolute` timespecs are returned unchanged.
 ///|
@@ -118,7 +100,7 @@ pub fn parse_range(
   if swap {
     match (since_ts, until_ts) {
       (Some(s), Some(u)) =>
-        if timespec_epoch(s) > timespec_epoch(u) {
+        if s.to_epoch_ms() > u.to_epoch_ms() {
           let tmp = since_ts
           since_ts = until_ts
           until_ts = tmp
@@ -139,18 +121,18 @@ fn resolve_anchor(
   since_ts : TimeSpec,
   until_ts : TimeSpec
 ) -> (TimeSpec, TimeSpec) {
-  let s_abs = is_absolute(since_ts)
-  let u_abs = is_absolute(until_ts)
+  let s_abs = since_ts.is_absolute()
+  let u_abs = until_ts.is_absolute()
   if s_abs && not(u_abs) {
     // since が Absolute → until を since 基準で再計算
     let resolved = resolve_relative_with_anchor(
-      until_ts, timespec_epoch(since_ts),
+      until_ts, since_ts.to_epoch_ms(),
     )
     (since_ts, resolved)
   } else if u_abs && not(s_abs) {
     // until が Absolute → since を until 基準で再計算
     let resolved = resolve_relative_with_anchor(
-      since_ts, timespec_epoch(until_ts),
+      since_ts, until_ts.to_epoch_ms(),
     )
     (resolved, until_ts)
   } else {
