@@ -131,28 +131,29 @@ fn parse_iso8601_with_tz(
   let (yr, p1) = parse_int_digits(s, pos, 4, 4)
   year = yr
   pos = p1
-  // 月（省略可、デフォルト1）
+  // 月（必須 — 部分日付は曖昧さ排除のため拒否）
   let has_date_sep = match s.get_char(pos) {
     Some('-') | Some('/') => true
     _ => false
   }
-  if pos < s.length() && (has_date_sep || is_digit_at(s, pos)) {
-    pos = skip_date_sep(s, pos)
-    let (m, p2) = parse_int_digits(s, pos, 1, 2)
-    month = m
-    pos = p2
-    // 日（省略可、デフォルト1）
-    if pos < s.length() && (match s.get_char(pos) {
-      Some('-') | Some('/') => true
-      _ => is_digit_at(s, pos) && not(has_date_sep)
-      // 区切りありなら区切りが必要、区切りなし(basic)なら数字続行
-    }) {
-      pos = skip_date_sep(s, pos)
-      let (d, p3) = parse_int_digits(s, pos, 1, 2)
-      day = d
-      pos = p3
-    }
+  if not(has_date_sep) && not(is_digit_at(s, pos)) {
+    raise ParseError("incomplete date (year-only): " + input)
   }
+  pos = skip_date_sep(s, pos)
+  let (m, p2) = parse_int_digits(s, pos, 1, 2)
+  month = m
+  pos = p2
+  // 日（必須）
+  if not(match s.get_char(pos) {
+    Some('-') | Some('/') => true
+    _ => is_digit_at(s, pos) && not(has_date_sep)
+  }) {
+    raise ParseError("incomplete date (year-month only): " + input)
+  }
+  pos = skip_date_sep(s, pos)
+  let (d, p3) = parse_int_digits(s, pos, 1, 2)
+  day = d
+  pos = p3
   // 時分秒（オプション）
   let mut hour = 0
   let mut min = 0
@@ -279,6 +280,54 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
       let hh = digit_value_at(s, p + 1) * 10 + digit_value_at(s, p + 2)
       let mm = digit_value_at(s, p + 3) * 10 + digit_value_at(s, p + 4)
       return Some(normalize_tz_offset(sign * (hh * 60 + mm)))
+    }
+  }
+  // Pattern 4: +/-HH or +/-H (2-3 chars: sign + 1-2 digits)
+  // Safe because partial dates (YYYY, YYYY-MM) are rejected by the parser.
+  // The sign must be preceded by a digit (time component) to avoid matching
+  // date separators like the '-' in "2024-01-15".
+  for offset in [3, 2] {
+    if len >= offset {
+      let p = len - offset
+      match s.get_char(p) {
+        Some('+') | Some('-') => {
+          // Check all chars after sign are digits
+          let mut all_digits = true
+          for i in (p + 1)..<len {
+            if not(is_digit_at(s, i)) {
+              all_digits = false
+              break
+            }
+          }
+          // Sign must be preceded by a digit that is part of a time component.
+          // We require a colon (':') somewhere before the sign to confirm
+          // time was present, avoiding false positives on dates like "2024-01-15".
+          let preceded_by_digit = p > 0 && is_digit_at(s, p - 1)
+          let mut has_colon_before = false
+          for i in 0..<p {
+            match s.get_char(i) {
+              Some(':') => {
+                has_colon_before = true
+                break
+              }
+              _ => ()
+            }
+          }
+          if all_digits && preceded_by_digit && has_colon_before {
+            let sign = match s.get_char(p) {
+              Some('-') => -1
+              _ => 1
+            }
+            let hh = if offset == 3 {
+              digit_value_at(s, p + 1) * 10 + digit_value_at(s, p + 2)
+            } else {
+              digit_value_at(s, p + 1)
+            }
+            return Some(normalize_tz_offset(sign * hh * 60))
+          }
+        }
+        _ => ()
+      }
     }
   }
   None

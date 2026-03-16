@@ -214,19 +214,11 @@ test "parse compact datetime formats" {
 }
 
 ///|
-test "parse partial datetime" {
-  inspect(@src.default_parse_datetime("2026"), content=(
-    #|Some(1767225600000)
-
-  ))
-  inspect(@src.default_parse_datetime("202603"), content=(
-    #|Some(1772323200000)
-
-  ))
-  inspect(@src.default_parse_datetime("2026-03"), content=(
-    #|Some(1772323200000)
-
-  ))
+test "parse partial datetime: year-only and year-month are rejected" {
+  // 部分日付は曖昧さ排除のため拒否（YMD必須）
+  inspect(@src.default_parse_datetime("2026"), content="None")
+  inspect(@src.default_parse_datetime("202603"), content="None")
+  inspect(@src.default_parse_datetime("2026-03"), content="None")
 }
 
 ///|
