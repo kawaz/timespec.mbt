@@ -323,22 +323,20 @@ Mixed の場合:
 
 ### パース例一覧
 
-凡例: `R` = `Relative`, `A` = `Absolute`, `s` = since の epoch, `u` = until の epoch
-
 以下は `default_sign~=Minus` を前提とした例。
 
 | since | until | since 結果 | until 結果 |
 |---|---|---|---|
-| `5m` | (空) | R(now-5m, -5m) | None |
-| (空) | `5m` | None | R(now-5m, -5m) |
-| `5m` | `3m` | R(now-5m, -5m) | R(now-3m, -3m) |
-| `5m` | `+3m` | R(now-5m, -5m) | R(now+3m, +3m) |
-| `5m` | `@3m` | R(u-5m, -5m) | A(now-3m) |
-| `@5m` | (空) | A(now-5m) | None |
-| `@5m` | `3m` | A(now-5m) | R(s-3m, -3m) |
-| `@5m` | `+3m` | A(now-5m) | R(s+3m, +3m) |
-| `@5m` | `@3m` | A(now-5m) | A(now-3m) |
-| `@5m` | `@+3m` | A(now-5m) | A(now+3m) |
+| `5m` | (空) | Relative(now-5m, -5m) | None |
+| (空) | `5m` | None | Relative(now-5m, -5m) |
+| `5m` | `3m` | Relative(now-5m, -5m) | Relative(now-3m, -3m) |
+| `5m` | `+3m` | Relative(now-5m, -5m) | Relative(now+3m, +3m) |
+| `5m` | `@3m` | Relative(until-5m, -5m) | Absolute(now-3m) |
+| `@5m` | (空) | Absolute(now-5m) | None |
+| `@5m` | `3m` | Absolute(now-5m) | Relative(since-3m, -3m) |
+| `@5m` | `+3m` | Absolute(now-5m) | Relative(since+3m, +3m) |
+| `@5m` | `@3m` | Absolute(now-5m) | Absolute(now-3m) |
+| `@5m` | `@+3m` | Absolute(now-5m) | Absolute(now+3m) |
 
 ### TzOffset パース
 
