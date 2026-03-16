@@ -222,3 +222,22 @@ test "parse_timespec: time-of-day single digit" {
   let b = @src.parse_timespec("@01:00", now=now_fn, default_tz_offset=Utc)
   assert_true(a == b)
 }
+
+///|
+test "TimeSpec accessors" {
+  let ts : @src.TimeSpec = Absolute(@src.EpochTime(700000L), @src.Duration(-300000L))
+  inspect(ts.epoch(), content="EpochTime(700000)")
+  inspect(ts.duration(), content="Duration(-300000)")
+  assert_true(ts.is_absolute())
+  inspect(ts.to_epoch_ms(), content="700000")
+}
+
+///|
+test "Duration::to_ms" {
+  inspect(@src.Duration(5000L).to_ms(), content="5000")
+}
+
+///|
+test "EpochTime::to_ms" {
+  inspect(@src.EpochTime(1000000L).to_ms(), content="1000000")
+}
