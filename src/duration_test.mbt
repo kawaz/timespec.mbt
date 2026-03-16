@@ -233,14 +233,8 @@ test "parse_duration: long unit names" {
   inspect(@src.parse_duration("30sec"), content=(
     #|Duration(30000)
   ))
-  inspect(@src.parse_duration("2hr"), content=(
-    #|Duration(7200000)
-  ))
   inspect(@src.parse_duration("5min"), content=(
     #|Duration(300000)
-  ))
-  inspect(@src.parse_duration("1wk"), content=(
-    #|Duration(604800000)
   ))
 }
 

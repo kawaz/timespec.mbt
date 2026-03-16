@@ -394,15 +394,6 @@ fn parse_unit(
               s.to_string(),
             )
           }
-        Some('k') =>
-          if try_match_word(s, pos, "wk") {
-            (604_800_000L, pos + 2)
-          } else {
-            raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
-              s.to_string(),
-            )
-          }
         _ => (604_800_000L, pos + 1) // 'w'
       }
     Some('d') =>
@@ -427,15 +418,6 @@ fn parse_unit(
             (3_600_000L, pos + 5)
           } else if try_match_word(s, pos, "hour") {
             (3_600_000L, pos + 4)
-          } else {
-            raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
-              s.to_string(),
-            )
-          }
-        Some('r') =>
-          if try_match_word(s, pos, "hr") {
-            (3_600_000L, pos + 2)
           } else {
             raise ParseError(
               "unknown unit at position " + pos.to_string() + " in: " +

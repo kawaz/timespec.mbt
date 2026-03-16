@@ -178,9 +178,9 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 
 | 単位 | エイリアス | 意味 | ミリ秒換算 |
 |---|---|---|---|
-| `w` | `wk`, `week`, `weeks` | 週 | × 604_800_000 |
+| `w` | `week`, `weeks` | 週 | × 604_800_000 |
 | `d` | `day`, `days` | 日 | × 86_400_000 |
-| `h` | `hr`, `hour`, `hours` | 時 | × 3_600_000 |
+| `h` | `hour`, `hours` | 時 | × 3_600_000 |
 | `m` | `min`, `minute`, `minutes` | 分 | × 60_000 |
 | `s` | `sec`, `second`, `seconds` | 秒 | × 1_000 |
 | `ms` | `millisecond`, `milliseconds` | ミリ秒 | × 1 |
