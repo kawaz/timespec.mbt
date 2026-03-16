@@ -8,13 +8,35 @@
 /// The result is normalized to `Utc`, `Hour(n)`, or `Min(n)`.
 ///|
 pub fn local_tz_offset() -> TzOffset {
-  let minutes = local_tz_offset_minutes_ffi()
+  normalize_tz_offset(local_tz_offset_minutes_ffi())
+}
+
+/// Normalizes a minute-based offset into the canonical `TzOffset` representation.
+///
+/// - `0` → `Utc`
+/// - Divisible by 60 → `Hour(n)`
+/// - Otherwise → `Min(n)`
+///|
+fn normalize_tz_offset(minutes : Int) -> TzOffset {
   if minutes == 0 {
     Utc
   } else if minutes % 60 == 0 {
     Hour(minutes / 60)
   } else {
     Min(minutes)
+  }
+}
+
+/// Converts a `TzOffset` to its equivalent in minutes.
+///
+/// `Local` is resolved to the system timezone before conversion.
+///|
+fn tz_offset_to_minutes(tz : TzOffset) -> Int {
+  match tz {
+    Utc => 0
+    Hour(h) => h * 60
+    Min(m) => m
+    Local => tz_offset_to_minutes(local_tz_offset())
   }
 }
 
@@ -94,14 +116,7 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
       "timezone offset out of range (must be within ±24 hours): " + input,
     )
   }
-  // ゼロオフセットの正規化
-  if total_minutes == 0 {
-    Utc
-  } else if total_minutes % 60 == 0 {
-    Hour(total_minutes / 60)
-  } else {
-    Min(total_minutes)
-  }
+  normalize_tz_offset(total_minutes)
 }
 
 /// Checks if the string contains a duration unit character (`h`, `m`, `s`)

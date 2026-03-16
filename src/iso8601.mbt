@@ -62,7 +62,7 @@ fn parse_iso8601_with_tz(
   }
   let mut pos = 0
   // 先頭が4桁年かチェック
-  let is_time_only = not(is_four_digit_year_start(s))
+  let is_time_only = not(is_four_digits_at_sv(s, 0))
   let mut year = 1970
   let mut month = 1
   let mut day = 1
@@ -113,7 +113,7 @@ fn parse_iso8601_with_tz(
       _ => ()
     }
     // タイムゾーンオフセット（オプション）
-    let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos, input)
+    let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos)
     pos = new_pos
     // 末尾に余分な文字がないか確認
     if pos < s.length() {
@@ -208,7 +208,7 @@ fn parse_iso8601_with_tz(
     }
   }
   // タイムゾーンオフセット（オプション）
-  let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos, input)
+  let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos)
   pos = new_pos
   // 末尾に余分な文字がないか確認
   if pos < s.length() {
@@ -221,34 +221,13 @@ fn parse_iso8601_with_tz(
   (epoch, parsed_tz)
 }
 
-/// Returns whether the string starts with 4 ASCII digits (i.e., a year).
-///|
-fn is_four_digit_year_start(s : StringView) -> Bool {
-  if s.length() < 4 {
-    return false
-  }
-  let mut i = 0
-  while i < 4 {
-    match s.get_char(i) {
-      Some(c) =>
-        if not(c.is_ascii_digit()) {
-          return false
-        }
-      None => return false
-    }
-    i += 1
-  }
-  true
-}
-
 /// Parses timezone suffix (Z, +HH:MM, -HH:MM, etc.) from position `pos`.
 ///
 /// Returns `(has_tz, tz_offset_min, new_pos)`.
 ///|
 fn parse_tz_suffix(
   s : StringView,
-  pos : Int,
-  input : String
+  pos : Int
 ) -> (Bool, Int, Int) raise ParseError {
   let mut p = pos
   let mut has_tz = false
@@ -292,7 +271,6 @@ fn parse_tz_suffix(
       _ => ()
     }
   }
-  ignore(input)
   (has_tz, tz_offset_min, p)
 }
 
@@ -307,13 +285,7 @@ fn resolve_tz(
   default_tz_offset : TzOffset
 ) -> (TzOffset, TzOffset?) {
   if has_tz {
-    let parsed_tz : TzOffset = if tz_offset_min == 0 {
-      Utc
-    } else if tz_offset_min % 60 == 0 {
-      Hour(tz_offset_min / 60)
-    } else {
-      Min(tz_offset_min)
-    }
+    let parsed_tz = normalize_tz_offset(tz_offset_min)
     (parsed_tz, Some(parsed_tz))
   } else {
     (default_tz_offset, None)
@@ -461,16 +433,7 @@ fn datetime_to_epoch(
   tz_offset~ : TzOffset = Utc
 ) -> Int64 {
   // TzOffset → 分単位オフセットに変換して UTC 化
-  let tz_resolved = match tz_offset {
-    Local => local_tz_offset()
-    _ => tz_offset
-  }
-  let offset_min = match tz_resolved {
-    Utc => 0
-    Hour(h) => h * 60
-    Min(m) => m
-    Local => 0 // unreachable
-  }
+  let offset_min = tz_offset_to_minutes(tz_offset)
   let mut y = year
   let mut mo = month
   let mut d = day
@@ -584,19 +547,14 @@ fn is_leap_year(year : Int) -> Bool {
 pub fn epoch_to_iso8601(
   epoch_ms : Int64,
   tz_offset~ : TzOffset = Utc
-) -> String raise ParseError {
-  // Local はシステムの TZ オフセットに解決して再帰呼び出し
-  match tz_offset {
-    Local => return epoch_to_iso8601(epoch_ms, tz_offset=local_tz_offset())
-    _ => ()
+) -> String {
+  // Local を解決してから TZ サフィックス用に保持
+  let resolved_tz = match tz_offset {
+    Local => local_tz_offset()
+    _ => tz_offset
   }
   // TzOffset に応じて epoch_ms にオフセットを加算
-  let offset_min : Int = match tz_offset {
-    Utc => 0
-    Hour(h) => h * 60
-    Min(m) => m
-    Local => 0 // unreachable
-  }
+  let offset_min = tz_offset_to_minutes(resolved_tz)
   let adjusted = epoch_ms + offset_min.to_int64() * 60L * 1000L
   // epoch_ms → 年月日時分秒に逆変換
   let total_ms = adjusted
@@ -637,7 +595,7 @@ pub fn epoch_to_iso8601(
     buf.write_string(pad3(ms))
   }
   // TzOffset サフィックス
-  match tz_offset {
+  match resolved_tz {
     Utc => buf.write_char('Z')
     Hour(h) => {
       if h >= 0 {

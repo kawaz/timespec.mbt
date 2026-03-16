@@ -583,20 +583,6 @@ fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
   pos
 }
 
-/// Converts a TzOffset to minutes.
-///|
-fn tz_offset_to_minutes(tz : TzOffset) -> Int {
-  match tz {
-    Utc => 0
-    Hour(h) => h * 60
-    Min(m) => m
-    Local => {
-      let resolved = local_tz_offset()
-      tz_offset_to_minutes(resolved)
-    }
-  }
-}
-
 /// Compares two `TzOffset` values for equality by their resolved UTC offset in minutes.
 ///
 /// `Local` is resolved to the system timezone before comparison.
