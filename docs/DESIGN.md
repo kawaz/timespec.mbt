@@ -404,11 +404,9 @@ Mixed の場合:
 ## 設計判断の記録
 
 詳細は `docs/decision-records/` を参照:
-- DR-001: CLI時間指定パーサの基本設計
-- DR-002: EpochTime 型の導入と sub-ms 精度の epoch
 - DR-003: カスタム epoch パラメータ
-- DR-004: ms 精度への簡素化
+- DR-004: ms 精度への簡素化（newtype 化）
 - DR-005: TzOffset の範囲バリデーションと pub(all) 維持
-- DR-006: セッション中の設計決定まとめ
+- DR-006: 設計決定まとめ（parse_range 方式、ago、EpochTime 命名、FFI 等）
 - DR-007: TimeSpec マルチパスパーサ
-- DR-008: 追加の設計決定（@冪等性、Eq方針、部分日付、UTCデフォルト、raw epoch）
+- DR-008: 追加の設計決定（@冪等性、Eq 方針、部分日付、Local デフォルト、raw epoch）
