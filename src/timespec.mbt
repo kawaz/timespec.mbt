@@ -252,13 +252,8 @@ pub fn parse_timespec(
       Some(epoch_ms) => {
         has_datetime = true
         dt_epoch_ms = epoch_ms
-        // TzOffset 情報も取得
-        try {
-          let (_, tz) = parse_iso8601_with_tz(datetime_str, default_tz_offset~)
-          tz_offset_datetime = tz
-        } catch {
-          _ => () // 外部パーサで成功した場合は TzOffset = None
-        }
+        // TzOffset 情報を文字列末尾から独立検出（パーサ非依存）
+        tz_offset_datetime = detect_tz_suffix(datetime_str)
       }
       None =>
         raise ParseError(

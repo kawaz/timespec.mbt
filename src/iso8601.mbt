@@ -221,6 +221,78 @@ fn parse_iso8601_with_tz(
   (epoch, parsed_tz)
 }
 
+/// Detects a timezone suffix at the end of a datetime string.
+///
+/// Recognizes trailing `Z`/`z`, `+HH:MM`/`-HH:MM`, and `+HHMM`/`-HHMM`.
+/// Returns `Some(tz)` if an explicit timezone is found, `None` otherwise.
+///
+/// This is independent of the datetime parser, so it works with any format
+/// (ISO 8601, locale-specific, etc.) as long as the TZ suffix follows
+/// standard notation.
+///|
+fn detect_tz_suffix(input : String) -> TzOffset? {
+  let s : StringView = input
+  let len = s.length()
+  if len == 0 {
+    return None
+  }
+  // Pattern 1: trailing Z/z
+  match s.get_char(len - 1) {
+    Some('Z') | Some('z') => return Some(Utc)
+    _ => ()
+  }
+  // Pattern 2: +/-HH:MM (6 chars: sign + 2 digits + colon + 2 digits)
+  if len >= 6 {
+    let p = len - 6
+    let is_sign = match s.get_char(p) {
+      Some('+') | Some('-') => true
+      _ => false
+    }
+    let has_colon = match s.get_char(p + 3) {
+      Some(':') => true
+      _ => false
+    }
+    if is_sign && has_colon && is_digit_at(s, p + 1) && is_digit_at(s, p + 2) &&
+      is_digit_at(s, p + 4) && is_digit_at(s, p + 5) {
+      let sign = match s.get_char(p) {
+        Some('-') => -1
+        _ => 1
+      }
+      let hh = digit_value_at(s, p + 1) * 10 + digit_value_at(s, p + 2)
+      let mm = digit_value_at(s, p + 4) * 10 + digit_value_at(s, p + 5)
+      return Some(normalize_tz_offset(sign * (hh * 60 + mm)))
+    }
+  }
+  // Pattern 3: +/-HHMM (5 chars: sign + 4 digits)
+  if len >= 5 {
+    let p = len - 5
+    let is_sign = match s.get_char(p) {
+      Some('+') | Some('-') => true
+      _ => false
+    }
+    if is_sign && is_digit_at(s, p + 1) && is_digit_at(s, p + 2) &&
+      is_digit_at(s, p + 3) && is_digit_at(s, p + 4) {
+      let sign = match s.get_char(p) {
+        Some('-') => -1
+        _ => 1
+      }
+      let hh = digit_value_at(s, p + 1) * 10 + digit_value_at(s, p + 2)
+      let mm = digit_value_at(s, p + 3) * 10 + digit_value_at(s, p + 4)
+      return Some(normalize_tz_offset(sign * (hh * 60 + mm)))
+    }
+  }
+  None
+}
+
+/// Returns the numeric value of the ASCII digit at position `pos`.
+///|
+fn digit_value_at(s : StringView, pos : Int) -> Int {
+  match s.get_char(pos) {
+    Some(c) => c.to_int() - '0'.to_int()
+    None => 0
+  }
+}
+
 /// Parses timezone suffix (Z, +HH:MM, -HH:MM, etc.) from position `pos`.
 ///
 /// Returns `(has_tz, tz_offset_min, new_pos)`.
