@@ -8,6 +8,12 @@
 ///|
 pub(all) struct Duration(Int64) derive(Eq, Show, Compare)
 
+/// Returns the duration value in milliseconds.
+///|
+pub fn Duration::to_ms(self : Duration) -> Int64 {
+  self.0
+}
+
 /// A point in time represented as milliseconds elapsed since the epoch.
 ///
 /// Unlike `Duration` which represents a span of time, `EpochTime` represents
@@ -15,6 +21,12 @@ pub(all) struct Duration(Int64) derive(Eq, Show, Compare)
 /// but can be shifted via the `epoch~` parameter in parse functions.
 ///|
 pub(all) struct EpochTime(Int64) derive(Eq, Show, Compare)
+
+/// Returns the epoch time value in milliseconds.
+///|
+pub fn EpochTime::to_ms(self : EpochTime) -> Int64 {
+  self.0
+}
 
 /// A parsed time specification, either absolute or relative.
 ///
@@ -57,6 +69,12 @@ pub fn TimeSpec::is_absolute(self : TimeSpec) -> Bool {
     Absolute(_, _) => true
     Relative(_, _) => false
   }
+}
+
+/// Returns the resolved epoch time in milliseconds.
+///|
+pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64 {
+  self.epoch().0
 }
 
 /// A time range consisting of optional `since` and `until` bounds.
