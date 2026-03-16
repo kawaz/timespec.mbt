@@ -62,7 +62,7 @@ pub fn parse_range(
   until~ : String = "",
   epoch~ : EpochTime = EpochTime(0L),
   default_sign~ : Sign = Plus,
-  default_tz_offset~ : TzOffset = Utc,
+  default_tz_offset~ : TzOffset = Local,
   now~ : () -> UInt64 = @env.now,
   swap~ : Bool = false,
   parse_datetime~ : (String) -> Int64? = default_parse_datetime

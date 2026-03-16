@@ -31,7 +31,7 @@ pub fn default_parse_datetime(input : String) -> Int64? {
 /// ```
 ///|
 pub fn make_parse_datetime(
-  default_tz_offset~ : TzOffset = Utc
+  default_tz_offset~ : TzOffset = Local
 ) -> (String) -> Int64? {
   fn(input) {
     try {
@@ -54,7 +54,7 @@ pub fn make_parse_datetime(
 ///|
 fn parse_iso8601_with_tz(
   input : String,
-  default_tz_offset~ : TzOffset = Utc
+  default_tz_offset~ : TzOffset = Local
 ) -> (Int64, TzOffset?) raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
@@ -328,7 +328,7 @@ fn resolve_tz(
 ///|
 fn parse_iso8601(
   input : String,
-  default_tz_offset~ : TzOffset = Utc
+  default_tz_offset~ : TzOffset = Local
 ) -> Int64 raise ParseError {
   parse_iso8601_with_tz(input, default_tz_offset~).0
 }
