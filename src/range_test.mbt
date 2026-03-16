@@ -233,3 +233,11 @@ test "parse_range: explicit since~/until~ overrides input~" {
   let expected = @src.parse_range(since="5m", until="3m", now=range_test_now, default_sign=Minus)
   assert_true(r == expected)
 }
+
+///|
+test "parse_range: no arguments" {
+  let r = @src.parse_range()
+  inspect(r, content=(
+    #|{since: None, until: None}
+  ))
+}

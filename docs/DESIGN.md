@@ -186,7 +186,6 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 | `ms` | `millisecond`, `milliseconds` | ミリ秒 | × 1 |
 
 `y`, `month` は非対応（可変長で曖昧）。
-`μs`/`us`, `ns` は非対応（ms 精度に統一）。指定するとエラー。
 
 #### 複合表現
 - `1h30m45s` — 連結可能
