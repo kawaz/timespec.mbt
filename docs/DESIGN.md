@@ -405,7 +405,6 @@ Mixed の場合:
 
 詳細は `docs/decision-records/` を参照:
 - DR-003: カスタム epoch パラメータ
-- DR-004: ms 精度への簡素化（newtype 化）
 - DR-005: TzOffset の範囲バリデーションと pub(all) 維持
 - DR-006: 設計決定まとめ（parse_range 方式、ago、EpochTime 命名、FFI 等）
 - DR-007: TimeSpec マルチパスパーサ
