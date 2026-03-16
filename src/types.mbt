@@ -34,6 +34,31 @@ pub(all) enum TimeSpec {
   Relative(EpochTime, Duration)
 } derive(Eq, Show)
 
+/// Returns the resolved epoch time.
+///|
+pub fn TimeSpec::epoch(self : TimeSpec) -> EpochTime {
+  match self {
+    Absolute(e, _) | Relative(e, _) => e
+  }
+}
+
+/// Returns the duration offset used to compute the epoch time.
+///|
+pub fn TimeSpec::duration(self : TimeSpec) -> Duration {
+  match self {
+    Absolute(_, d) | Relative(_, d) => d
+  }
+}
+
+/// Returns whether this is an absolute time specification.
+///|
+pub fn TimeSpec::is_absolute(self : TimeSpec) -> Bool {
+  match self {
+    Absolute(_, _) => true
+    Relative(_, _) => false
+  }
+}
+
 /// A time range consisting of optional `since` and `until` bounds.
 ///
 /// Either or both fields may be `None` to represent an open-ended range.
