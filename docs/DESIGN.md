@@ -412,3 +412,4 @@ Mixed の場合:
 - DR-005: TzOffset の範囲バリデーションと pub(all) 維持
 - DR-006: セッション中の設計決定まとめ
 - DR-007: TimeSpec マルチパスパーサ
+- DR-008: 追加の設計決定（@冪等性、Eq方針、部分日付、UTCデフォルト、raw epoch）
