@@ -1,7 +1,7 @@
 ///| JS: local_tz_offset が有効な値を返すことを確認
 /// JS ではプロセス内で TZ を変更できないため、値の妥当性のみ検証
 test "js: local_tz_offset returns valid offset" {
-  let tz = @src.local_tz_offset()
+  let tz = @timespec.local_tz_offset()
   match tz {
     Utc => () // UTC 環境
     Hour(h) => {
