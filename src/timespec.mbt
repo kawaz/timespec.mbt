@@ -49,7 +49,7 @@ pub fn parse_timespec(
   }
   // ===== Phase 1: Leading sign + Duration segment extraction =====
   let mut pos = 0
-  // 先頭の @ をチェック
+  // Check for leading @
   let mut has_at = false
   match s.get_char(pos) {
     Some('@') => {
@@ -58,7 +58,7 @@ pub fn parse_timespec(
     }
     _ => ()
   }
-  // 先頭の符号をチェック
+  // Check for leading sign
   let mut needs_sign = false
   let mut leading_sign_char : Char? = None
   let negate : Bool = match s.get_char(pos) {
@@ -78,21 +78,21 @@ pub fn parse_timespec(
         Plus => false
         Reject => {
           needs_sign = true
-          false // 仮の値
+          false // Provisional value
         }
       }
   }
   pos = skip_spaces(s, pos)
-  // 文字列を走査: duration セグメントの ms を直接累積、非 duration 部分は蓄積
+  // Scan the string: accumulate duration segment ms directly, buffer non-duration parts
   let non_duration_buf = StringBuilder::new()
   let mut has_duration = false
   let mut total_duration_ms = 0L
-  // 先頭符号の適用: 最初の無符号 duration セグメントグループに negate を適用
-  // セグメントグループ = 明示符号で区切られた連続 duration セグメント列
-  // 最初のグループの符号は negate (先頭符号) に従い、以降は明示符号に従う
+  // Apply leading sign: negate applies to the first unsigned duration segment group
+  // A segment group = consecutive duration segments delimited by explicit signs
+  // The first group follows negate (leading sign); subsequent groups follow explicit signs
   let mut current_group_ms = 0L
   let mut current_group_sign : Int64 = if negate { -1L } else { 1L }
-  let mut in_first_group = true // まだ最初のグループにいるか
+  let mut in_first_group = true // Whether we are still in the first group
   let mut scan_pos = pos
   while scan_pos < s.length() {
     scan_pos = skip_spaces(s, scan_pos)
@@ -108,7 +108,7 @@ pub fn parse_timespec(
       }
       _ => ()
     }
-    // 符号を先読み
+    // Look ahead for a sign
     let seg_sign_start = scan_pos
     let mut seg_sign_char : Char? = None
     match s.get_char(scan_pos) {
@@ -123,19 +123,19 @@ pub fn parse_timespec(
       _ => ()
     }
     let after_sign = skip_spaces(s, scan_pos)
-    // 数字で始まるか確認
+    // Check if it starts with a digit
     if is_digit_at(s, after_sign) {
-      // duration セグメント候補を試みる
+      // Try as a duration segment candidate
       let probe_result = probe_duration_segment(s, after_sign)
       match probe_result {
         Some((seg_ms, is_ago, dur_end)) => {
-          // duration セグメント確定
+          // Confirmed as a duration segment
           has_duration = true
-          // ago による反転を適用
+          // Apply "ago" reversal
           let effective_ms = if is_ago { -seg_ms } else { seg_ms }
           match seg_sign_char {
             Some('+') => {
-              // 明示 +: 現在グループをフラッシュして新グループ開始
+              // Explicit +: flush current group and start a new one
               if not(in_first_group) || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
@@ -148,7 +148,7 @@ pub fn parse_timespec(
               in_first_group = false
             }
             Some('-') => {
-              // 明示 -: 現在グループをフラッシュして新グループ開始
+              // Explicit -: flush current group and start a new one
               if not(in_first_group) || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
@@ -161,7 +161,7 @@ pub fn parse_timespec(
               in_first_group = false
             }
             _ => {
-              // 符号なし: 現在グループに累積
+              // No sign: accumulate into the current group
               current_group_ms = checked_add(
                 current_group_ms, effective_ms, msg="timespec overflow",
               )
@@ -171,7 +171,7 @@ pub fn parse_timespec(
           continue
         }
         None => {
-          // duration ではない → 非 duration
+          // Not a duration segment -> non-duration
           scan_pos = seg_sign_start
           let non_dur_end = scan_non_duration(s, scan_pos)
           non_duration_buf.write_string(s[scan_pos:non_dur_end].to_string())
@@ -180,7 +180,7 @@ pub fn parse_timespec(
         }
       }
     } else {
-      // 数字で始まらない → 非 duration
+      // Does not start with a digit -> non-duration
       scan_pos = seg_sign_start
       let non_dur_end = scan_non_duration(s, scan_pos)
       if non_dur_end == scan_pos {
@@ -198,7 +198,7 @@ pub fn parse_timespec(
       continue
     }
   }
-  // 最後のグループをフラッシュ
+  // Flush the last group
   if has_duration {
     total_duration_ms = checked_add(
       total_duration_ms,
@@ -207,8 +207,8 @@ pub fn parse_timespec(
     )
   }
   let duration = Duration(total_duration_ms)
-  // ===== Phase 2: @ マーカー検出 (走査中に has_at を設定済み) =====
-  // ===== Phase 3: Time-of-day パターンの検出 =====
+  // ===== Phase 2: @ marker detection (has_at already set during scan) =====
+  // ===== Phase 3: Time-of-day pattern detection =====
   let remaining_raw = non_duration_buf.to_string()
   let remaining_no_at = remaining_raw.replace(old="@", new="").trim().to_string()
   let mut time_of_day_ms : Int64? = None
@@ -225,9 +225,9 @@ pub fn parse_timespec(
       tz_offset_timepart = tod_tz
     }
   }
-  // ===== Phase 3.5: Raw epoch ms の検出 =====
-  // @付きで残り文字列が [+-]?数字のみ → raw epoch ms（date -d @EPOCH 規約）
-  // 先頭符号が Phase 1 で消費されているので復元する
+  // ===== Phase 3.5: Raw epoch ms detection =====
+  // With @ and remaining string is [+-]?digits only -> raw epoch ms (date -d @EPOCH convention)
+  // Restore leading sign consumed in Phase 1
   let mut has_raw_epoch = false
   let mut raw_epoch_ms = 0L
   let raw_candidate = if datetime_str.length() > 0 && not(has_duration) {
@@ -243,7 +243,7 @@ pub fn parse_timespec(
     has_raw_epoch = true
     datetime_str = ""
   }
-  // ===== Phase 4: datetime パース =====
+  // ===== Phase 4: Datetime parsing =====
   let mut has_datetime = false
   let mut dt_epoch_ms = 0L
   let mut tz_offset_datetime : TzOffset? = None
@@ -252,7 +252,7 @@ pub fn parse_timespec(
       Some(epoch_ms) => {
         has_datetime = true
         dt_epoch_ms = epoch_ms
-        // TzOffset 情報を文字列末尾から独立検出（パーサ非依存）
+        // Detect TzOffset from the string suffix independently (parser-agnostic)
         tz_offset_datetime = detect_tz_suffix(datetime_str)
       }
       None =>
@@ -261,15 +261,15 @@ pub fn parse_timespec(
         )
     }
   }
-  // ===== Phase 5: EpochTime の構築 =====
+  // ===== Phase 5: Build EpochTime =====
   if not(has_duration) && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None && not(has_at) {
     raise ParseError("no duration or datetime found in: " + input)
   }
-  // Reject モードチェック: duration のみで datetime/time-of-day/raw epoch がない場合
+  // Reject mode check: duration only with no datetime/time-of-day/raw epoch
   if needs_sign && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None {
     raise ParseError("missing sign in timespec: " + input)
   }
-  // 基準 epoch_ms の決定
+  // Determine the base epoch_ms
   let mut base_epoch_ms = 0L
   if has_raw_epoch {
     base_epoch_ms = raw_epoch_ms
@@ -278,10 +278,10 @@ pub fn parse_timespec(
   } else {
     base_epoch_ms = now().reinterpret_as_int64()
   }
-  // Time-of-day リセット
+  // Time-of-day reset
   match time_of_day_ms {
     Some(tod_ms) => {
-      // TzOffset 整合性チェック
+      // TzOffset consistency check
       let effective_tod_tz = match tz_offset_timepart {
         Some(tz) => tz
         None => default_tz_offset
@@ -295,7 +295,7 @@ pub fn parse_timespec(
           raise ParseError("ambiguous timezone offset")
         }
       }
-      // 基準をローカル midnight に切り落とし
+      // Truncate base to local midnight
       let offset_minutes = tz_offset_to_minutes(effective_tod_tz)
       let offset_ms = offset_minutes.to_int64() * 60_000L
       let local_ms = base_epoch_ms + offset_ms
@@ -305,11 +305,11 @@ pub fn parse_timespec(
     }
     None => ()
   }
-  // Duration を加算
+  // Add duration
   let final_epoch_ms = checked_add(
     base_epoch_ms - epoch.0, duration.0, msg="timespec overflow",
   )
-  // ===== Phase 6: TimeSpec の構築 =====
+  // ===== Phase 6: Build TimeSpec =====
   let epoch_time = EpochTime(final_epoch_ms)
   if has_at || has_datetime {
     Absolute(epoch_time, duration)
@@ -328,7 +328,7 @@ fn probe_duration_segment(
   s : StringView,
   pos : Int
 ) -> (Int64, Bool, Int)? raise ParseError {
-  // 数字部分を読む
+  // Read the digit part
   let mut p = pos
   while p < s.length() {
     match s.get_char(p) {
@@ -345,7 +345,7 @@ fn probe_duration_segment(
     return None
   }
   let after_num = skip_spaces(s, p)
-  // ユニット文字があるか確認
+  // Check if a unit character follows
   let unit_result = try {
     parse_unit(s, after_num)
   } catch {
@@ -353,17 +353,17 @@ fn probe_duration_segment(
   }
   let (ms_mul, unit_end) = unit_result
   if unit_end == after_num {
-    return None // ユニットがない → duration ではない
+    return None // No unit found -> not a duration
   }
-  // 数値を実際にパース
+  // Actually parse the numeric value
   let (integer_part, fractional_part, _) = parse_number(s, pos)
-  // ms の計算
+  // Compute ms
   let mut seg_ms = checked_mul(integer_part, ms_mul, msg="timespec overflow")
   if fractional_part > 0.0 {
     let frac_ms = (fractional_part * ms_mul.to_double()).to_int64()
     seg_ms = checked_add(seg_ms, frac_ms, msg="timespec overflow")
   }
-  // ago チェック
+  // Check for "ago" modifier
   let after_unit = skip_spaces(s, unit_end)
   let (is_ago, end) = if try_match_word(s, after_unit, "ago") {
     (true, after_unit + 3)
@@ -420,7 +420,7 @@ fn scan_non_duration(s : StringView, start : Int) -> Int {
 ///|
 fn split_datetime_and_timeofday(s : String) -> (String, String) {
   let sv : StringView = s
-  // 4桁年パターンを検索
+  // Search for a 4-digit year pattern
   let mut dt_start = -1
   let mut i = 0
   while i < sv.length() {
@@ -436,10 +436,10 @@ fn split_datetime_and_timeofday(s : String) -> (String, String) {
     i += 1
   }
   if dt_start >= 0 {
-    // datetime 部分の終端を探す
+    // Find the end of the datetime part
     let dt_end = find_datetime_end_sv(sv, dt_start)
     let dt_part = sv[dt_start:dt_end].to_string().trim().to_string()
-    // datetime 以外の部分に time-of-day があるか
+    // Check if there is a time-of-day in non-datetime parts
     let before = sv[0:dt_start].to_string().trim().to_string()
     let after : String = if dt_end < sv.length() {
       sv[dt_end:sv.length()].to_string().trim().to_string()
@@ -500,7 +500,7 @@ fn find_datetime_end_sv(s : StringView, start : Int) -> Int {
           if c == 'T' || c == 't' {
             after_t = true
           }
-          // space: datetime の T セパレータの可能性。次が数字でなければ終了
+          // space: may act as T separator in datetime. End if next char is not a digit
           if c == ' ' {
             if not(is_digit_at(s, pos + 1)) {
               break
@@ -606,13 +606,13 @@ fn is_signed_digits(s : String) -> Bool {
     return false
   }
   let mut i = 0
-  // 先頭の符号をスキップ
+  // Skip leading sign
   match sv.get_char(0) {
     Some('+') | Some('-') => i = 1
     _ => ()
   }
   if i >= sv.length() {
-    return false // 符号のみ
+    return false // Sign only
   }
   while i < sv.length() {
     match sv.get_char(i) {

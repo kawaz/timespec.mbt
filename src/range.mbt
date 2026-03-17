@@ -6,7 +6,7 @@ fn resolve_relative_with_anchor(
   anchor_epoch : Int64
 ) -> TimeSpec {
   match ts {
-    Absolute(_, _) => ts // 絶対は変更しない
+    Absolute(_, _) => ts // Absolute remains unchanged
     Relative(_, duration) => {
       let duration_ms = duration.0
       let new_epoch = anchor_epoch + duration_ms
@@ -49,7 +49,7 @@ pub fn parse_range(
   swap~ : Bool = false,
   parse_datetime~ : (String) -> Int64? = default_parse_datetime
 ) -> TimeRange raise ParseError {
-  // input と since/until の排他チェック
+  // Mutual exclusion check between input and since/until
   let mut since = since
   let mut until = until
   if input.length() > 0 && (since.length() > 0 || until.length() > 0) {
@@ -57,17 +57,17 @@ pub fn parse_range(
       "cannot specify both input and since/until in parse_range",
     )
   }
-  // input から since/until を展開
+  // Expand since/until from input
   if input.length() > 0 {
     match input.split_once("~") {
       Some((s, u)) => {
         since = s.to_string()
         until = u.to_string()
       }
-      None => since = input // ~ なし → since として扱う
+      None => since = input // No tilde -> treat as since
     }
   }
-  // since をパース（空でなければ）
+  // Parse since (if non-empty)
   let mut since_ts : TimeSpec? = if since.trim().length() > 0 {
     Some(
       parse_timespec(
@@ -77,7 +77,7 @@ pub fn parse_range(
   } else {
     None
   }
-  // until をパース（空でなければ）
+  // Parse until (if non-empty)
   let mut until_ts : TimeSpec? = if until.trim().length() > 0 {
     Some(
       parse_timespec(
@@ -87,7 +87,7 @@ pub fn parse_range(
   } else {
     None
   }
-  // アンカー解決（両方ある場合のみ）
+  // Anchor resolution (only when both are present)
   match (since_ts, until_ts) {
     (Some(s), Some(u)) => {
       let (resolved_s, resolved_u) = resolve_anchor(s, u)
@@ -96,7 +96,7 @@ pub fn parse_range(
     }
     _ => ()
   }
-  // swap: since > until なら入れ替え
+  // swap: exchange since and until if since > until
   if swap {
     match (since_ts, until_ts) {
       (Some(s), Some(u)) =>
@@ -124,19 +124,19 @@ fn resolve_anchor(
   let s_abs = since_ts.is_absolute()
   let u_abs = until_ts.is_absolute()
   if s_abs && not(u_abs) {
-    // since が Absolute → until を since 基準で再計算
+    // since is Absolute -> recalculate until relative to since
     let resolved = resolve_relative_with_anchor(
       until_ts, since_ts.to_epoch_ms(),
     )
     (since_ts, resolved)
   } else if u_abs && not(s_abs) {
-    // until が Absolute → since を until 基準で再計算
+    // until is Absolute -> recalculate since relative to until
     let resolved = resolve_relative_with_anchor(
       since_ts, until_ts.to_epoch_ms(),
     )
     (resolved, until_ts)
   } else {
-    // 同種 → 独立
+    // Same kind -> independent
     (since_ts, until_ts)
   }
 }

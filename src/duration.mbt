@@ -71,7 +71,7 @@ pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime {
 ///|
 fn checked_add(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise ParseError {
   let result = a + b
-  // オーバーフロー検出: 符号が反転した場合
+  // Overflow detection: sign has flipped
   if (a > 0L && b > 0L && result < 0L) ||
     (a < 0L && b < 0L && result > 0L) {
     raise ParseError(msg)
@@ -120,7 +120,7 @@ pub fn parse_duration(
     raise ParseError("empty duration string")
   }
   let mut pos = 0
-  // 先頭の符号を判定
+  // Determine the leading sign
   let negate : Bool = match s.get_char(pos) {
     Some('+') => {
       pos += 1
@@ -137,22 +137,22 @@ pub fn parse_duration(
         Reject => raise ParseError("missing sign in duration: " + input)
       }
   }
-  // スペースをスキップ
+  // Skip spaces
   pos = skip_spaces(s, pos)
-  // グループベースのパース
-  // グループ = 明示的 +/- で区切られた連続セグメント
-  // ago はグループ全体を反転し、次のグループを開始する
+  // Group-based parsing
+  // A group = consecutive segments delimited by explicit +/-
+  // "ago" reverses the entire group and starts a new group
   let mut total_ms = 0L
   let mut group_ms = 0L
   let mut group_sign = 1L
   let mut parsed_any = false
   while pos < s.length() {
-    // スペースをスキップ
+    // Skip spaces
     pos = skip_spaces(s, pos)
     if pos >= s.length() {
       break
     }
-    // 明示 +/- でグループを区切る
+    // Delimit groups by explicit +/-
     let saved_pos = pos
     let mut new_group = false
     match s.get_char(pos) {
@@ -187,11 +187,11 @@ pub fn parse_duration(
       }
       break
     }
-    // 数値でなければ ago チェック
+    // If not a digit, check for "ago"
     match s.get_char(pos) {
       Some(ch) =>
         if not(ch.is_ascii_digit()) {
-          // ago チェック
+          // Check for "ago" modifier
           if try_match_word(s, pos, "ago") {
             group_ms = -group_ms
             total_ms = checked_add(
@@ -205,7 +205,7 @@ pub fn parse_duration(
             continue
           }
           if new_group {
-            pos = saved_pos // 符号消費を元に戻す
+            pos = saved_pos // Undo sign consumption
           }
           break
         }
@@ -219,23 +219,23 @@ pub fn parse_duration(
     let (integer_part, fractional_part, new_pos) = parse_number(s, pos)
     pos = new_pos
     pos = skip_spaces(s, pos)
-    // ユニットを読む
+    // Read the unit
     let (ms_mul, unit_end) = parse_unit(s, pos)
     if unit_end == pos {
       raise ParseError("missing unit after number in: " + input)
     }
     pos = unit_end
-    // 整数部の計算
+    // Compute the integer part
     let mut seg_ms = checked_mul(integer_part, ms_mul, msg="duration overflow")
-    // 小数部（ms に変換）
+    // Fractional part (convert to ms)
     if fractional_part > 0.0 {
       let frac_ms = (fractional_part * ms_mul.to_double()).to_int64()
       seg_ms = checked_add(seg_ms, frac_ms, msg="duration overflow")
     }
-    // グループに累積
+    // Accumulate into the current group
     group_ms = checked_add(group_ms, seg_ms, msg="duration overflow")
     parsed_any = true
-    // ユニット直後の ago チェック
+    // Check for "ago" immediately after the unit
     pos = skip_spaces(s, pos)
     if try_match_word(s, pos, "ago") {
       group_ms = -group_ms
@@ -252,18 +252,18 @@ pub fn parse_duration(
   if not(parsed_any) {
     raise ParseError("no duration segments found in: " + input)
   }
-  // 残りのグループをフラッシュ
+  // Flush the remaining group
   total_ms = checked_add(
     total_ms,
     checked_mul(group_sign, group_ms, msg="duration overflow"),
     msg="duration overflow",
   )
-  // 末尾に余分な文字があればエラー
+  // Error if there are trailing characters
   pos = skip_spaces(s, pos)
   if pos < s.length() {
     raise ParseError("unexpected characters after duration: " + input)
   }
-  // 全体符号の適用（先頭の +/- or default_sign）
+  // Apply the overall sign (from leading +/- or default_sign)
   if negate {
     total_ms = -total_ms
   }
@@ -294,7 +294,7 @@ fn skip_spaces(s : StringView, start : Int) -> Int {
 fn parse_number(s : StringView, start : Int) -> (Int64, Double, Int) raise ParseError {
   let mut pos = start
   let mut integer_part = 0L
-  // 整数部
+  // Integer part
   let max_div = 922_337_203_685_477_580L // Int64::max_value / 10
   let max_mod = 7 // Int64::max_value % 10
   while pos < s.length() {
@@ -315,7 +315,7 @@ fn parse_number(s : StringView, start : Int) -> (Int64, Double, Int) raise Parse
       None => break
     }
   }
-  // 小数部
+  // Fractional part
   let mut frac_part = 0.0
   match s.get_char(pos) {
     Some('.') => {
@@ -361,7 +361,7 @@ fn try_match_word(s : StringView, pos : Int, word : String) -> Bool {
       _ => return false
     }
   }
-  // word の後は非アルファベット文字か EOF であること（部分一致防止）
+  // Must be followed by a non-alphabetic character or EOF (prevent partial matches)
   match s.get_char(pos + wlen) {
     Some(c) => not(c.is_ascii_lowercase() || c.is_ascii_uppercase())
     None => true

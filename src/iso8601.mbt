@@ -61,17 +61,17 @@ fn parse_iso8601_with_tz(
     raise ParseError("empty datetime string")
   }
   let mut pos = 0
-  // 先頭が4桁年かチェック
+  // Check if it starts with a 4-digit year
   let is_time_only = not(is_four_digits_at_sv(s, 0))
   let mut year = 1970
   let mut month = 1
   let mut day = 1
   if is_time_only {
-    // time-only: 直接 HH:MM をパース（T セパレータ不要）
-    // 時(1-2桁)
+    // time-only: parse HH:MM directly (no T separator needed)
+    // Hours (1-2 digits)
     let (h, p4) = parse_int_digits(s, pos, 1, 2)
     pos = p4
-    // ':' が必須（time-only の判定根拠）
+    // ':' is required (basis for time-only detection)
     match s.get_char(pos) {
       Some(':') => pos += 1
       _ =>
@@ -85,7 +85,7 @@ fn parse_iso8601_with_tz(
     let min = mi
     let mut sec = 0
     let mut ms = 0
-    // 秒（省略可）
+    // Seconds (optional)
     if pos < s.length() {
       match s.get_char(pos) {
         Some(':') => {
@@ -97,7 +97,7 @@ fn parse_iso8601_with_tz(
         _ => ()
       }
     }
-    // ミリ秒（オプション）
+    // Milliseconds (optional)
     match s.get_char(pos) {
       Some('.') => {
         pos += 1
@@ -112,10 +112,10 @@ fn parse_iso8601_with_tz(
       }
       _ => ()
     }
-    // タイムゾーンオフセット（オプション）
+    // Timezone offset (optional)
     let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos)
     pos = new_pos
-    // 末尾に余分な文字がないか確認
+    // Check for unexpected trailing characters
     if pos < s.length() {
       raise ParseError(
         "unexpected character at position " + pos.to_string() + " in: " + input,
@@ -127,11 +127,11 @@ fn parse_iso8601_with_tz(
     )
     return (epoch, parsed_tz)
   }
-  // 年(4桁)
+  // Year (4 digits)
   let (yr, p1) = parse_int_digits(s, pos, 4, 4)
   year = yr
   pos = p1
-  // 月（必須 — 部分日付は曖昧さ排除のため拒否）
+  // Month (required -- partial dates are rejected to avoid ambiguity)
   let has_date_sep = match s.get_char(pos) {
     Some('-') | Some('/') => true
     _ => false
@@ -143,7 +143,7 @@ fn parse_iso8601_with_tz(
   let (m, p2) = parse_int_digits(s, pos, 1, 2)
   month = m
   pos = p2
-  // 日（必須）
+  // Day (required)
   if not(match s.get_char(pos) {
     Some('-') | Some('/') => true
     _ => is_digit_at(s, pos) && not(has_date_sep)
@@ -154,7 +154,7 @@ fn parse_iso8601_with_tz(
   let (d, p3) = parse_int_digits(s, pos, 1, 2)
   day = d
   pos = p3
-  // 時分秒（オプション）
+  // Hours, minutes, seconds (optional)
   let mut hour = 0
   let mut min = 0
   let mut sec = 0
@@ -163,11 +163,11 @@ fn parse_iso8601_with_tz(
     match s.get_char(pos) {
       Some('T') | Some('t') | Some(' ') => {
         pos += 1
-        // 時(1-2桁)
+        // Hours (1-2 digits)
         let (h, p4) = parse_int_digits(s, pos, 1, 2)
         hour = h
         pos = p4
-        // 分（省略可）
+        // Minutes (optional)
         let has_time_sep = match s.get_char(pos) {
           Some(':') => true
           _ => false
@@ -177,7 +177,7 @@ fn parse_iso8601_with_tz(
           let (m, p5) = parse_int_digits(s, pos, 1, 2)
           min = m
           pos = p5
-          // 秒（省略可）
+          // Seconds (optional)
           if pos < s.length() && (match s.get_char(pos) {
             Some(':') => true
             _ => is_digit_at(s, pos) && not(has_time_sep)
@@ -188,13 +188,13 @@ fn parse_iso8601_with_tz(
             pos = p6
           }
         }
-        // ミリ秒（オプション）
+        // Milliseconds (optional)
         match s.get_char(pos) {
           Some('.') => {
             pos += 1
             let (frac, frac_digits, p7) = parse_frac_digits(s, pos, 3)
             ms = frac
-            // 桁数が足りなければゼロ埋め
+            // Zero-pad if fewer digits than needed
             let mut scale = frac_digits
             while scale < 3 {
               ms *= 10
@@ -208,10 +208,10 @@ fn parse_iso8601_with_tz(
       _ => ()
     }
   }
-  // タイムゾーンオフセット（オプション）
+  // Timezone offset (optional)
   let (has_tz, tz_offset_min, new_pos) = parse_tz_suffix(s, pos)
   pos = new_pos
-  // 末尾に余分な文字がないか確認
+  // Check for unexpected trailing characters
   if pos < s.length() {
     raise ParseError(
       "unexpected character at position " + pos.to_string() + " in: " + input,
@@ -504,7 +504,7 @@ fn parse_frac_digits(
       None => break
     }
   }
-  // max_digits を超える余分な桁は読み飛ばす
+  // Skip excess digits beyond max_digits
   while pos < s.length() {
     match s.get_char(pos) {
       Some(c) =>
@@ -553,7 +553,7 @@ fn datetime_to_epoch(
   ms : Int,
   tz_offset~ : TzOffset = Utc
 ) -> Int64 {
-  // TzOffset → 分単位オフセットに変換して UTC 化
+  // Convert TzOffset to minute-based offset and normalize to UTC
   let offset_min = tz_offset_to_minutes(tz_offset)
   let mut y = year
   let mut mo = month
@@ -561,17 +561,17 @@ fn datetime_to_epoch(
   let mut h = hour
   let mut mi = min - offset_min
   let mut s = sec
-  // 1. 秒→分→時→日の繰り上げ/繰り下げ
+  // 1. Carry/borrow from seconds -> minutes -> hours -> days
   mi += floor_div(s, 60)
   s = floor_mod(s, 60)
   h += floor_div(mi, 60)
   mi = floor_mod(mi, 60)
   d += floor_div(h, 24)
   h = floor_mod(h, 24)
-  // 2. 月の正規化: 1-12 の範囲に
+  // 2. Normalize month to the 1-12 range
   y += floor_div(mo - 1, 12)
   mo = floor_mod(mo - 1, 12) + 1
-  // 3. 日の正規化: 月の日数に基づき繰り上げ/繰り下げ
+  // 3. Normalize day: carry/borrow based on days in month
   while d > days_in_month(y, mo) {
     d -= days_in_month(y, mo)
     mo += 1
@@ -588,7 +588,7 @@ fn datetime_to_epoch(
     }
     d += days_in_month(y, mo)
   }
-  // epoch 変換: 通算日数の計算（1970-01-01 = 0）
+  // Convert to epoch: compute total days from 1970-01-01 (= day 0)
   let days = days_from_epoch(y, mo, d)
   (days.to_int64() * 86400L + h.to_int64() * 3600L + mi.to_int64() * 60L +
   s.to_int64()) *
@@ -669,19 +669,19 @@ pub fn epoch_to_iso8601(
   epoch_ms : Int64,
   tz_offset~ : TzOffset = Utc
 ) -> String {
-  // Local を解決してから TZ サフィックス用に保持
+  // Resolve Local before retaining for TZ suffix formatting
   let resolved_tz = match tz_offset {
     Local => local_tz_offset()
     _ => tz_offset
   }
-  // TzOffset に応じて epoch_ms にオフセットを加算
+  // Add offset to epoch_ms according to TzOffset
   let offset_min = tz_offset_to_minutes(resolved_tz)
   let adjusted = epoch_ms + offset_min.to_int64() * 60L * 1000L
-  // epoch_ms → 年月日時分秒に逆変換
+  // Convert epoch_ms back to year/month/day/hour/min/sec
   let total_ms = adjusted
   let mut total_seconds = total_ms / 1000L
   let mut ms = (total_ms % 1000L).to_int()
-  // 負値対応
+  // Handle negative values
   if ms < 0 {
     ms += 1000
     total_seconds -= 1L
@@ -695,9 +695,9 @@ pub fn epoch_to_iso8601(
   let hour = remaining / 3600
   let min = (remaining % 3600) / 60
   let sec = remaining % 60
-  // total_days から年月日を逆算（Howard Hinnant's algorithm）
+  // Compute year/month/day from total_days (Howard Hinnant's algorithm)
   let (year, month, day) = epoch_days_to_civil(total_days)
-  // 文字列構築
+  // Build the string
   let buf = StringBuilder::new()
   buf.write_string(pad4(year))
   buf.write_char('-')
@@ -710,12 +710,12 @@ pub fn epoch_to_iso8601(
   buf.write_string(pad2(min))
   buf.write_char(':')
   buf.write_string(pad2(sec))
-  // ミリ秒が非ゼロなら .NNN 付与
+  // Append .NNN if milliseconds are non-zero
   if ms != 0 {
     buf.write_char('.')
     buf.write_string(pad3(ms))
   }
-  // TzOffset サフィックス
+  // TzOffset suffix
   match resolved_tz {
     Utc => buf.write_char('Z')
     Hour(h) => {

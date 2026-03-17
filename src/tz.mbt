@@ -81,7 +81,7 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
   if lower == "local" {
     return Local
   }
-  // 先頭の符号を取得
+  // Get the leading sign
   let mut pos = 0
   let sign : Int = match s.get_char(pos) {
     Some('+') => {
@@ -94,23 +94,23 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
     }
     _ => 1
   }
-  // duration 形式の判定: pos 以降に h, m, s が含まれるか
+  // Detect duration format: check if h, m, or s appears from pos onward
   let is_duration = contains_duration_unit(s, pos)
   let total_minutes : Int = if is_duration {
-    // parse_duration に元のトリム済み文字列を渡す
+    // Pass the original trimmed string to parse_duration
     let trimmed = input.trim().to_string()
     let dur = parse_duration(trimmed, default_sign=Plus)
     let ms = dur.0
-    // TZ オフセットは分単位。分に割り切れない場合はエラー
+    // TZ offset is in minutes. Error if not evenly divisible
     if ms % 60_000L != 0L {
       raise ParseError("timezone offset must be in whole minutes, got: " + trimmed)
     }
     (ms / 60_000L).to_int()
   } else {
-    // 数値形式のパース
+    // Parse numeric format
     parse_numeric_offset(s, pos, sign)
   }
-  // 範囲チェック: TZ オフセットは ±24 時間 (±1440 分) 以内
+  // Range check: TZ offset must be within +/-24 hours (+/-1440 minutes)
   if total_minutes > 1440 || total_minutes < -1440 {
     raise ParseError(
       "timezone offset out of range (must be within ±24 hours): " + input,
@@ -142,7 +142,7 @@ fn parse_numeric_offset(
   sign : Int
 ) -> Int raise ParseError {
   let mut pos = start
-  // 最初の数値部分を読む（TZ オフセットは最大 HHMM の4桁）
+  // Read the first numeric part (TZ offset is at most 4 digits for HHMM)
   let mut first_num = 0
   let mut first_digits = 0
   while pos < s.length() {
@@ -164,10 +164,10 @@ fn parse_numeric_offset(
   if first_digits == 0 {
     raise ParseError("expected digit in timezone offset")
   }
-  // コロンがあるか確認
+  // Check for colon separator
   match s.get_char(pos) {
     Some(':') => {
-      // HH:MM 形式
+      // HH:MM format
       pos += 1
       let mut mm = 0
       let mut mm_digits = 0
@@ -194,13 +194,13 @@ fn parse_numeric_offset(
     }
     _ =>
       if first_digits <= 2 {
-        // 1-2桁: 時のみ
+        // 1-2 digits: hours only
         if pos < s.length() {
           raise ParseError("unexpected trailing characters in timezone offset: " + s.to_string())
         }
         sign * first_num * 60
       } else if first_digits == 4 {
-        // 4桁: HHMM
+        // 4 digits: HHMM
         if pos < s.length() {
           raise ParseError("unexpected trailing characters in timezone offset: " + s.to_string())
         }
