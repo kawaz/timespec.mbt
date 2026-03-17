@@ -33,7 +33,7 @@ docs/
 ## 設計資料
 
 - `docs/DESIGN.md` — 型設計、API、パース規則
-- `docs/decision-records/` — 設計判断の経緯（DR-001〜DR-007）
+- `docs/decision-records/` — 設計判断の経緯（DR-003〜DR-009）
 
 ## アーキテクチャ
 

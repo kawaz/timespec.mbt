@@ -60,9 +60,9 @@ Phase 1-3.5 で duration・@・time-of-day・raw epoch を除去した残りが 
 - 空 → datetime なし
 
 datetime パース時の TzOffset 回収:
-- 内部パーサ (`parse_iso8601`) を拡張し、元文字列で明示された TzOffset があればそれも返す: `(Int64, TzOffset?)`
-- `default_tz_offset` で解決した場合は `None`（明示されていないので）
-- 外部プラガブルパーサ `(String) -> Int64?` は現行シグネチャ維持（TzOffset = None 扱い）
+- `detect_tz_suffix` でパーサ非依存に元文字列の末尾から TZ サフィックスを検出（→ DR-009）
+- 内部パーサ・外部プラガブルパーサを問わず同一の仕組みで TZ 情報を回収
+- `parse_datetime~` のシグネチャ `(String) -> Int64?` は変更なし
 
 #### Phase 5: EpochTime の構築
 

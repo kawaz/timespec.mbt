@@ -242,7 +242,7 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 2. **Phase 2: `@` マーカー検出** — Phase 1 の走査中に `@` の有無を記録
 3. **Phase 3: Time-of-day パターンの検出** — `@` 付きで残り文字列に `:` を含む場合、`HH:MM[:SS[.mmm]][TZ]` として解釈。TzOffset 整合性チェックも実施
 4. **Phase 3.5: Raw epoch ms の検出** — `@` 付きで残り文字列が `[+-]?[0-9]+` のみの場合、raw epoch ms として解釈（`date -d @EPOCH` 規約。例: `@1704110400000`, `@-100`）
-5. **Phase 4: datetime パース** — 残りの非 duration 文字列を `parse_datetime~` でパース
+5. **Phase 4: datetime パース** — 残りの非 duration 文字列を `parse_datetime~` でパース。TZ 情報は `detect_tz_suffix` でパーサ非依存に回収
 6. **Phase 5-6: EpochTime / TimeSpec の構築** — 基準 epoch の決定、time-of-day リセット、duration 加算、Absolute/Relative の判定
 
 #### 入力例
@@ -355,15 +355,37 @@ Mixed の場合:
 組み込みの最小限パーサ。プラガブルに差し替え可能。
 
 受け入れ形式:
-- `YYYY-MM-DD` — TZ なし → **Local として解釈**（デフォルト）
+- `YYYY-MM-DD` — TZ なし → **Local として解釈**（デフォルト）。**YMD（年月日）すべて必須**
 - `YYYY-MM-DDTHH:MM:SS` — TZ なし → **Local として解釈**
 - `YYYY-MM-DDTHH:MM:SSZ`
 - `YYYY-MM-DDTHH:MM:SS±HH:MM`
 - `HH:MM[:SS[.mmm]][TZ]` — time-only（日付は 1970-01-01 として解釈）
 - 区切り `/` も許容
 
+**拒否される形式**:
+- `YYYY`（年のみ）— エラー
+- `YYYY-MM`（年月のみ）— エラー
+
+部分日付を拒否する理由: `+/-HH` 形式の短い TZ オフセット（`+09`, `-5` 等）と部分日付の末尾（`-01`, `-9`）が構文的に曖昧になるため。YMD すべて必須とすることで曖昧さを排除する（→ DR-009）。
+
 **TZ なし日時の扱い**: デフォルトでは TZ 情報のない入力を **ローカルタイムゾーン** として解釈する（ISO 8601 準拠）。
 `default_tz_offset~` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
+
+### TZ サフィックス検出（detect_tz_suffix）
+
+`detect_tz_suffix(String) -> TzOffset?` は文字列末尾から TZ サフィックスを検出するパーサ非依存のユーティリティ。
+
+検出パターン:
+| パターン | 例 | 結果 |
+|---|---|---|
+| `Z` / `z` | `...Z` | `Utc` |
+| `±HH:MM` | `...+09:00` | `Hour(9)` |
+| `±HHMM` | `...+0900` | `Hour(9)` |
+| `±HH` / `±H` | `...+09`, `...+9` | `Hour(9)` |
+
+**`±HH` / `±H` の安全条件**: 符号の前が digit かつ文字列中にコロン（時刻成分）が含まれる場合のみ検出。これにより `2024-01-15` の `-15` を TZ と誤認しない。部分日付が禁止されているため、`2024-01` のような入力は来ないことが前提。
+
+**用途**: Phase 4 で `parse_datetime~`（カスタムパーサ含む）のパース結果から TZ 情報を回収する。`parse_iso8601` の内部 TZ パースとは独立に機能するため、プラガブルなカスタム datetime パーサを使用しても TZ 整合性チェックが動作する。`parse_tz_offset`（文字列全体を TZ として解釈）とは異なり、datetime 文字列の末尾部分のみを対象とする。
 
 ### 日付正規化
 
@@ -395,3 +417,4 @@ Mixed の場合:
 - DR-006: 設計決定まとめ（parse_range 方式、ago、EpochTime 命名、FFI 等）
 - DR-007: TimeSpec マルチパスパーサ
 - DR-008: 追加の設計決定（@冪等性、Eq 方針、部分日付、Local デフォルト、raw epoch）
+- DR-009: 部分日付の禁止と detect_tz_suffix の新設
