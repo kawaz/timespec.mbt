@@ -69,20 +69,16 @@ pub fn parse_range(
   }
   // Parse since (if non-empty)
   let mut since_ts : TimeSpec? = if since.trim().length() > 0 {
-    Some(
-      parse_timespec(
-        since, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
-      ),
+    parse_timespec(
+      since, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
     )
   } else {
     None
   }
   // Parse until (if non-empty)
   let mut until_ts : TimeSpec? = if until.trim().length() > 0 {
-    Some(
-      parse_timespec(
-        until, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
-      ),
+    parse_timespec(
+      until, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
     )
   } else {
     None

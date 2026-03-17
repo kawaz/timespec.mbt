@@ -31,7 +31,8 @@
 /// * `now` : Clock function returning the current time in ms. Defaults to `@env.now`.
 /// * `parse_datetime` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
 ///
-/// Returns a `TimeSpec` -- either `Absolute` or `Relative`.
+/// Returns `Some(TimeSpec)` for valid time expressions, or `None` for
+/// explicit reset keywords (`none`, `null`, `nil`).
 ///
 /// Raises `ParseError` on malformed input.
 ///|
@@ -42,10 +43,39 @@ pub fn parse_timespec(
   default_tz_offset~ : TzOffset = Local,
   now~ : () -> UInt64 = @env.now,
   parse_datetime~ : (String) -> Int64? = default_parse_datetime
-) -> TimeSpec raise ParseError {
+) -> TimeSpec? raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
     raise ParseError("empty timespec string")
+  }
+  // Check for none/null/nil keywords (explicit reset)
+  let lower = s.to_lower()
+  if lower == "none" || lower == "null" || lower == "nil" {
+    return None
+  }
+  // Check for "now" keyword
+  let is_now = lower == "now" || lower == "@now" ||
+    (lower.length() > 1 && {
+      // Handle patterns like "@@now", "@@@now", etc.
+      let mut all_at = true
+      let mut i = 0
+      while i < lower.length() - 3 {
+        match lower.get_char(i) {
+          Some('@') => i += 1
+          _ => { all_at = false; break }
+        }
+      }
+      all_at && lower[i:] == "now"
+    })
+  if is_now {
+    let now_ms = now().reinterpret_as_int64()
+    let epoch_time = EpochTime(now_ms - epoch.0)
+    let has_at = s.to_lower().contains("@")
+    if has_at {
+      return Some(Absolute(epoch_time, Duration(0L)))
+    } else {
+      return Some(Relative(epoch_time, Duration(0L)))
+    }
   }
   // ===== Phase 1: Leading sign + Duration segment extraction =====
   let mut pos = 0
@@ -262,6 +292,11 @@ pub fn parse_timespec(
     }
   }
   // ===== Phase 5: Build EpochTime =====
+  // `@` alone with no duration/datetime/time-of-day → Absolute(now)
+  if has_at && not(has_duration) && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None {
+    let now_ms = now().reinterpret_as_int64()
+    return Some(Absolute(EpochTime(now_ms - epoch.0), Duration(0L)))
+  }
   if not(has_duration) && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None && not(has_at) {
     raise ParseError("no duration or datetime found in: " + input)
   }
@@ -312,9 +347,9 @@ pub fn parse_timespec(
   // ===== Phase 6: Build TimeSpec =====
   let epoch_time = EpochTime(final_epoch_ms)
   if has_at || has_datetime {
-    Absolute(epoch_time, duration)
+    Some(Absolute(epoch_time, duration))
   } else {
-    Relative(epoch_time, duration)
+    Some(Relative(epoch_time, duration))
   }
 }
 
