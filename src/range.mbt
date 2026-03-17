@@ -19,21 +19,21 @@ fn resolve_relative_with_anchor(
 ///
 /// Supports three input styles:
 ///
-/// 1. **Two-argument** (recommended): pass `since~` and/or `until~` individually.
-/// 2. **Tilde notation**: pass `input~` as `"since~until"` (e.g. `"5d~3m"`, `"5d~"`, `"~3m"`).
-/// 3. **Mixed**: explicit `since~`/`until~` override values derived from `input~`.
+/// 1. **Two-argument** (recommended): pass `since` and/or `until` individually.
+/// 2. **Tilde notation**: pass `input` as a tilde-delimited `"since~until"` string (e.g. `"5d~3m"`, `"5d~"`, `"~3m"`).
+/// 3. **Mixed**: explicit `since`/`until` override values derived from `input`.
 ///
 /// Parameters:
 ///
-/// * `input~` : A tilde-separated range string. Split on `~` to derive since/until.
-/// * `since~` : The since-side timespec string. Overrides `input~` when non-empty.
-/// * `until~` : The until-side timespec string. Overrides `input~` when non-empty.
-/// * `epoch~` : Base epoch offset. Defaults to Unix epoch.
-/// * `default_sign~` : Sign interpretation for unsigned durations. Defaults to `Plus`.
-/// * `now~` : Clock function. Defaults to `@env.now`.
-/// * `default_tz_offset~` : Default timezone for TZ-less datetimes. Defaults to `Utc`.
-/// * `swap~` : When `true`, swaps since/until if since > until. Defaults to `false`.
-/// * `parse_datetime~` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
+/// * `input` : A tilde-delimited range string. Split on tilde (`~`) to derive since/until.
+/// * `since` : The since-side timespec string. Overrides `input` when non-empty.
+/// * `until` : The until-side timespec string. Overrides `input` when non-empty.
+/// * `epoch` : Base epoch offset. Defaults to Unix epoch.
+/// * `default_sign` : Sign interpretation for unsigned durations. Defaults to `Plus`.
+/// * `now` : Clock function. Defaults to `@env.now`.
+/// * `default_tz_offset` : Default timezone for TZ-less datetimes. Defaults to `Utc`.
+/// * `swap` : When `true`, swaps since/until if since > until. Defaults to `false`.
+/// * `parse_datetime` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
 ///
 /// Returns a `TimeRange` with anchor resolution applied when one side is
 /// `Absolute` and the other is `Relative`.
@@ -49,15 +49,15 @@ pub fn parse_range(
   swap~ : Bool = false,
   parse_datetime~ : (String) -> Int64? = default_parse_datetime
 ) -> TimeRange raise ParseError {
-  // input~ と since~/until~ の排他チェック
+  // input と since/until の排他チェック
   let mut since = since
   let mut until = until
   if input.length() > 0 && (since.length() > 0 || until.length() > 0) {
     raise ParseError(
-      "cannot specify both input~ and since~/until~ in parse_range",
+      "cannot specify both input and since/until in parse_range",
     )
   }
-  // input~ から since/until を展開
+  // input から since/until を展開
   if input.length() > 0 {
     match input.split_once("~") {
       Some((s, u)) => {

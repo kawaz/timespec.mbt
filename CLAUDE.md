@@ -41,7 +41,7 @@ docs/
 
 - `parse_duration` — `5m`, `1.5h`, `3_600_000ms` → Duration
 - `parse_timespec` — duration + datetime の複合入力をマルチパス方式（6フェーズ）でパース → TimeSpec（Absolute/Relative）
-- `parse_range` — `since~`/`until~` 2引数方式 or `input~` で `~` 区切り → TimeRange（Mixed時アンカー解決）
+- `parse_range` — `since`/`until` 2引数方式 or `input` にチルダ(`~`)区切り文字列 → TimeRange（Mixed時アンカー解決）
 - `parse_tz_offset` — `+09:00`, `9h` → TzOffset
 
 主要な型:

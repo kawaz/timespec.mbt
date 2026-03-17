@@ -64,13 +64,13 @@ pub(all) enum Sign {
 ```
 
 Sign は符号省略時のデフォルト解釈を呼び出し側が指定するためのパラメータ。
-`parse_duration` でも `parse` でも `default_sign~` として受け取り、
+`parse_duration` でも `parse` でも `default_sign` として受け取り、
 アプリケーションの文脈に応じて呼び出し側が選択する。
 
 用途例:
-- ログ検索: `default_sign~=Minus`（`--since 5m` → 5分前）
-- タイマー/予約: `default_sign~=Plus`（`set_timer("3m")` → 3分後）
-- 過去/未来両方あり得るクエリ: `default_sign~=Reject`（符号必須、曖昧さ排除）
+- ログ検索: `default_sign=Minus`（`--since 5m` → 5分前）
+- タイマー/予約: `default_sign=Plus`（`set_timer("3m")` → 3分後）
+- 過去/未来両方あり得るクエリ: `default_sign=Reject`（符号必須、曖昧さ排除）
 
 ### TzOffset
 
@@ -242,12 +242,12 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 2. **Phase 2: `@` マーカー検出** — Phase 1 の走査中に `@` の有無を記録
 3. **Phase 3: Time-of-day パターンの検出** — `@` 付きで残り文字列に `:` を含む場合、`HH:MM[:SS[.mmm]][TZ]` として解釈。TzOffset 整合性チェックも実施
 4. **Phase 3.5: Raw epoch ms の検出** — `@` 付きで残り文字列が `[+-]?[0-9]+` のみの場合、raw epoch ms として解釈（`date -d @EPOCH` 規約。例: `@1704110400000`, `@-100`）
-5. **Phase 4: datetime パース** — 残りの非 duration 文字列を `parse_datetime~` でパース。TZ 情報は `detect_tz_suffix` でパーサ非依存に回収
+5. **Phase 4: datetime パース** — 残りの非 duration 文字列を `parse_datetime` でパース。TZ 情報は `detect_tz_suffix` でパーサ非依存に回収
 6. **Phase 5-6: EpochTime / TimeSpec の構築** — 基準 epoch の決定、time-of-day リセット、duration 加算、Absolute/Relative の判定
 
 #### 入力例
 
-以下は `default_sign~=Minus` を前提とした例。`default_sign~=Plus`（デフォルト）の場合は符号なし duration の方向が反転する。
+以下は `default_sign=Minus` を前提とした例。`default_sign=Plus`（デフォルト）の場合は符号なし duration の方向が反転する。
 
 | 入力 | 解釈（default_sign=Minus） |
 |---|---|
@@ -272,7 +272,7 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 
 #### 入力方式
 
-**方式1: 2引数（推奨）** — `since~` / `until~` を個別に指定
+**方式1: 2引数（推奨）** — `since` / `until` を個別に指定
 
 ```moonbit
 // CLI の --since / --until に直接対応
@@ -281,7 +281,7 @@ parse_range(since="5m", default_sign=Minus)     // since のみ
 parse_range(until="3m", default_sign=Minus)     // until のみ
 ```
 
-**方式2: `~` 形式** — `input~` に `since~until` 文字列を渡す
+**方式2: チルダ(`~`)区切り形式** — `input` にチルダ区切りの `since~until` 文字列を渡す
 
 ```moonbit
 // 単一引数で since/until を表現（~ で分割される）
@@ -291,7 +291,7 @@ parse_range(input="~3m", default_sign=Minus)    // since なし, until="3m"
 parse_range(input="5m", default_sign=Minus)     // ~ なし → since="5m"
 ```
 
-`input~` と `since~`/`until~` の同時指定は `ParseError`。
+`input` と `since`/`until` の同時指定は `ParseError`。
 
 #### 動作
 
@@ -319,11 +319,11 @@ Mixed の場合:
 - 各パートが独立に now 基準で解決済み
 - `since="5m", until="3m"` → since=R(now-5m), until=R(now-3m)
 
-**swap オプション**: `swap~=true` でパーサ側の s<=u 保証。デフォルトはアプリ判断。
+**swap オプション**: `swap=true` でパーサ側の s<=u 保証。デフォルトはアプリ判断。
 
 ### パース例一覧
 
-以下は `default_sign~=Minus` を前提とした例。
+以下は `default_sign=Minus` を前提とした例。
 
 | since | until | since 結果 | until 結果 |
 |---|---|---|---|
@@ -369,7 +369,7 @@ Mixed の場合:
 部分日付を拒否する理由: `+/-HH` 形式の短い TZ オフセット（`+09`, `-5` 等）と部分日付の末尾（`-01`, `-9`）が構文的に曖昧になるため。YMD すべて必須とすることで曖昧さを排除する（→ DR-009）。
 
 **TZ なし日時の扱い**: デフォルトでは TZ 情報のない入力を **ローカルタイムゾーン** として解釈する（ISO 8601 準拠）。
-`default_tz_offset~` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
+`default_tz_offset` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
 
 ### TZ サフィックス検出（detect_tz_suffix）
 
@@ -385,7 +385,7 @@ Mixed の場合:
 
 **`±HH` / `±H` の安全条件**: 符号の前が digit かつ文字列中にコロン（時刻成分）が含まれる場合のみ検出。これにより `2024-01-15` の `-15` を TZ と誤認しない。部分日付が禁止されているため、`2024-01` のような入力は来ないことが前提。
 
-**用途**: Phase 4 で `parse_datetime~`（カスタムパーサ含む）のパース結果から TZ 情報を回収する。`parse_iso8601` の内部 TZ パースとは独立に機能するため、プラガブルなカスタム datetime パーサを使用しても TZ 整合性チェックが動作する。`parse_tz_offset`（文字列全体を TZ として解釈）とは異なり、datetime 文字列の末尾部分のみを対象とする。
+**用途**: Phase 4 で `parse_datetime`（カスタムパーサ含む）のパース結果から TZ 情報を回収する。`parse_iso8601` の内部 TZ パースとは独立に機能するため、プラガブルなカスタム datetime パーサを使用しても TZ 整合性チェックが動作する。`parse_tz_offset`（文字列全体を TZ として解釈）とは異なり、datetime 文字列の末尾部分のみを対象とする。
 
 ### 日付正規化
 
@@ -406,8 +406,8 @@ Mixed の場合:
 ### epoch_to_iso8601()
 
 - デフォルト: UTC (Z)
-- `tz_offset~=Hour(9)` → `+09:00` 付き
-- `tz_offset~=Local` → ローカルTZ取得して適用
+- `tz_offset=Hour(9)` → `+09:00` 付き
+- `tz_offset=Local` → ローカルTZ取得して適用
 
 ## 設計判断の記録
 

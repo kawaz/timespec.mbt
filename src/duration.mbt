@@ -104,7 +104,7 @@ fn checked_mul(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise 
 ///
 /// * `input` : The duration string to parse (e.g. `"5m"`, `"1h30m"`, `"3_600_000ms"`,
 ///   `"1.5h"`, `"5 minutes ago"`).
-/// * `default_sign~` : How to interpret input without an explicit `+`/`-` sign.
+/// * `default_sign` : How to interpret input without an explicit `+`/`-` sign.
 ///   Defaults to `Plus`.
 ///
 /// Returns a `Duration` in milliseconds.

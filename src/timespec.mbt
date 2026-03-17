@@ -25,11 +25,11 @@
 /// Parameters:
 ///
 /// * `input` : The timespec string (e.g. `"5m"`, `"@5m"`, `"2025-01-01T00:00:00Z+1h"`).
-/// * `epoch~` : Base epoch offset subtracted from absolute results. Defaults to Unix epoch.
-/// * `default_sign~` : How to interpret unsigned durations. Defaults to `Plus`.
-/// * `default_tz_offset~` : Default timezone for TZ-less datetimes. Defaults to `Utc`.
-/// * `now~` : Clock function returning the current time in ms. Defaults to `@env.now`.
-/// * `parse_datetime~` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
+/// * `epoch` : Base epoch offset subtracted from absolute results. Defaults to Unix epoch.
+/// * `default_sign` : How to interpret unsigned durations. Defaults to `Plus`.
+/// * `default_tz_offset` : Default timezone for TZ-less datetimes. Defaults to `Utc`.
+/// * `now` : Clock function returning the current time in ms. Defaults to `@env.now`.
+/// * `parse_datetime` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
 ///
 /// Returns a `TimeSpec` -- either `Absolute` or `Relative`.
 ///

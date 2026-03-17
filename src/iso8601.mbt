@@ -1,7 +1,7 @@
 /// Parses an ISO 8601 datetime string and returns the epoch time in milliseconds.
 ///
 /// This is the default `parse_datetime` implementation used by `parse_timespec`.
-/// It can be replaced with a custom parser via the `parse_datetime~` parameter.
+/// It can be replaced with a custom parser via the `parse_datetime` parameter.
 ///
 /// Accepted formats include `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`,
 /// `YYYY-MM-DDTHH:MM:SS.sssZ`, and `YYYY-MM-DDTHH:MM:SS+HH:MM`.
@@ -657,7 +657,7 @@ fn is_leap_year(year : Int) -> Bool {
 /// Parameters:
 ///
 /// * `epoch_ms` : Milliseconds since 1970-01-01T00:00:00Z.
-/// * `tz_offset~` : The timezone offset to apply. Defaults to `Utc`.
+/// * `tz_offset` : The timezone offset to apply. Defaults to `Utc`.
 ///   With `Utc`, the output ends in `Z`. With `Hour(9)`, it ends in `+09:00`.
 ///   With `Local`, the system timezone is queried at runtime.
 ///

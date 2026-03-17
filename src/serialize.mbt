@@ -64,7 +64,7 @@ fn format_duration(d : Duration) -> String {
 /// Parameters:
 ///
 /// * `self` : The `TimeSpec` to serialize.
-/// * `epoch~` : Epoch offset to add back to absolute values. Defaults to zero.
+/// * `epoch` : Epoch offset to add back to absolute values. Defaults to zero.
 ///
 /// Returns a string suitable for passing to `--since` or `--until` CLI arguments.
 ///|

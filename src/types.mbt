@@ -18,7 +18,7 @@ pub fn Duration::to_ms(self : Duration) -> Int64 {
 ///
 /// Unlike `Duration` which represents a span of time, `EpochTime` represents
 /// a specific instant. The epoch is Unix epoch (1970-01-01T00:00:00Z) by default,
-/// but can be shifted via the `epoch~` parameter in parse functions.
+/// but can be shifted via the `epoch` parameter in parse functions.
 ///|
 pub(all) struct EpochTime(Int64) derive(Eq, Show, Compare)
 
@@ -90,7 +90,7 @@ pub(all) struct TimeRange {
 
 /// Controls how unsigned (no explicit `+` or `-`) duration inputs are interpreted.
 ///
-/// Passed as the `default_sign~` parameter to parse functions. The caller
+/// Passed as the `default_sign` parameter to parse functions. The caller
 /// chooses the variant based on application context:
 ///
 /// - `Minus` — unsigned means negative (e.g. `--since 5m` means "5 minutes ago").

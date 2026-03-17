@@ -40,11 +40,11 @@ ts.to_cli_string()
 - **TimeSpec**: duration + datetime interleaving, `@` for absolute pinning
 - **Time-of-day reset**: `@00:00` (today's midnight), `@10:30` (today at 10:30)
 - **Raw epoch**: `@1704110400000` (direct epoch ms, like `date -d @EPOCH`)
-- **TimeRange**: `since~`/`until~` two-argument or `input~` tilde notation
+- **TimeRange**: `since`/`until` two-argument or `input` with tilde (`~`) delimiter
 - **Timezone offset**: `parse_tz_offset("GMT+9")`, `local_tz_offset()`
 - **ISO 8601**: lenient parsing with date normalization, partial dates (`2026`, `2026-03`), time-only (`10:30`)
 - **Re-serialization**: `to_cli_string()` preserves Absolute/Relative intent
-- **Pluggable**: custom `now~`, `parse_datetime~`, `epoch~`, `default_tz_offset~`
+- **Pluggable**: custom `now`, `parse_datetime`, `epoch`, `default_tz_offset`
 - **Custom epoch**: Snowflake, Performance API, etc.
 - **Multi-target**: JS, Native (with C FFI for local TZ), WASM
 

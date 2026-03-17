@@ -5,7 +5,7 @@
 
 ## 1. parse_range の2引数方式
 
-`since~` と `until~` を個別に受け取る。`input~` で `~` 形式も対応。
+`since` と `until` を個別に受け取る。`input` でチルダ(`~`)区切り形式も対応。
 アンカー解決は Mixed ルール（片方 Absolute なら anchor）のみ。
 
 ## 2. ago 修飾子のグループレベル反転
