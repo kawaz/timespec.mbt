@@ -5,7 +5,7 @@
   "readme": "README.md",
   "repository": "https://github.com/kawaz/timespec.mbt",
   "license": "MIT",
-  "keywords": ["time", "duration", "datetime", "cli", "parser", "timespec"],
+  "keywords": ["time", "duration", "datetime", "range", "span", "cli", "parser", "timespec"],
   "description": "CLI-oriented time specification parser for MoonBit",
   "exclude": ["CLAUDE.md", "justfile", "docs"]
 }
