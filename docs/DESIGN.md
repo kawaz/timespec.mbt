@@ -97,49 +97,52 @@ pub(all) suberror ParseError {
 // Duration パース
 pub fn parse_duration(
   input : String,
-  default_sign~ : Sign = Plus
+  default_sign? : Sign = Plus
 ) -> Duration!ParseError
 
 // 単一 TimeSpec パース（datetime + duration の複合入力、マルチパス方式）
 pub fn parse_timespec(
   input : String,
-  epoch~ : EpochTime = EpochTime(0L),
-  default_sign~ : Sign = Plus,
-  default_tz_offset~ : TzOffset = Utc,
-  now~ : () -> UInt64 = @env.now,
-  parse_datetime~ : (String) -> Int64? = default_parse_datetime
-) -> TimeSpec!ParseError
+  epoch? : EpochTime = EpochTime(0L),
+  default_sign? : Sign = Plus,
+  default_tz_offset? : TzOffset = Local,
+  now? : () -> UInt64 = @env.now,
+  parse_datetime? : (String) -> Int64? = default_parse_datetime
+) -> TimeSpec?!ParseError
 
 // TimeRange パース
 pub fn parse_range(
-  input~ : String = "",
-  since~ : String = "",
-  until~ : String = "",
-  epoch~ : EpochTime = EpochTime(0L),
-  default_sign~ : Sign = Plus,
-  default_tz_offset~ : TzOffset = Utc,
-  now~ : () -> UInt64 = @env.now,
-  swap~ : Bool = false,
-  parse_datetime~ : (String) -> Int64? = default_parse_datetime
+  input? : String = "",
+  since? : String = "",
+  until? : String = "",
+  epoch? : EpochTime = EpochTime(0L),
+  default_sign? : Sign = Plus,
+  default_tz_offset? : TzOffset = Local,
+  now? : () -> UInt64 = @env.now,
+  swap? : Bool = false,
+  parse_datetime? : (String) -> Int64? = default_parse_datetime
 ) -> TimeRange!ParseError
 
 // TzOffset パース
 pub fn parse_tz_offset(s : String) -> TzOffset!ParseError
 
 // 再シリアライズ
-pub fn TimeSpec::to_cli_string(self : TimeSpec, epoch~ : EpochTime = EpochTime(0L)) -> String
+pub fn TimeSpec::to_cli_string(self : TimeSpec, epoch? : EpochTime = EpochTime(0L)) -> String
 
 // epoch → ISO 8601（TzOffset 対応）
-pub fn epoch_to_iso8601(epoch_ms : Int64, tz_offset~ : TzOffset = Utc) -> String raise ParseError
+pub fn epoch_to_iso8601(epoch_ms : Int64, tz_offset? : TzOffset = Utc) -> String
 
 // デフォルト datetime パーサ（差し替え用に公開）
 pub fn default_parse_datetime(s : String) -> Int64?
 
 // カスタム TZ 付き datetime パーサ生成
-pub fn make_parse_datetime(default_tz_offset~ : TzOffset = Utc) -> (String) -> Int64?
+pub fn make_parse_datetime(default_tz_offset? : TzOffset = Local) -> (String) -> Int64?
 
 // ローカルタイムゾーンオフセット取得
 pub fn local_tz_offset() -> TzOffset
+
+// Duration アクセサ
+pub fn Duration::to_ms(self : Duration) -> Int64
 
 // Duration 定数
 pub let millisecond : Duration  // Duration(1L)
@@ -157,8 +160,17 @@ pub impl Neg for Duration       // -Duration
 // Duration スカラ倍
 pub fn Duration::scale(self : Duration, n : Int64) -> Duration
 
+// EpochTime アクセサ
+pub fn EpochTime::to_ms(self : EpochTime) -> Int64
+
 // EpochTime に Duration を加算
 pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime
+
+// TimeSpec アクセサ
+pub fn TimeSpec::epoch(self : TimeSpec) -> EpochTime
+pub fn TimeSpec::duration(self : TimeSpec) -> Duration
+pub fn TimeSpec::is_absolute(self : TimeSpec) -> Bool
+pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64
 
 // TzOffset の意味的等価比較（分単位で解決して比較。Hour(9) == Min(540)）
 pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
@@ -225,7 +237,7 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 1つの timespec パートの構文:
 
 ```
-[@] [sign] (duration | datetime | time-of-day)+ [@]
+[@] [sign] (duration | datetime | time-of-day | keyword)+ [@]
 ```
 
 - `@` は前置・後置どちらも可（`@-5h` = `-5h@`）。セグメント間にも配置可能（`1h@30m` = `@1h30m`）
@@ -233,6 +245,17 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 - duration は datetime に対するオフセットとして加算される
 - datetime がなければ now 基準の相対指定
 - `@HH:MM[:SS[.mmm]][TZ]` で今日の指定時刻にリセット（`@` 必須）
+
+#### キーワード
+
+| キーワード | 大文字小文字 | 結果 |
+|---|---|---|
+| `now` | 不問 | `Relative(now, Duration(0))` — 現在時刻（相対） |
+| `@now` | 不問 | `Absolute(now, Duration(0))` — 現在時刻（絶対） |
+| `@` | — | `@now` と同等（`@` のみの場合） |
+| `none`, `null`, `nil` | 不問 | `None` を返す（TimeSpec? の None。明示的リセット用） |
+
+`none`/`null`/`nil` は `parse_range` のチルダ記法と組み合わせて片側だけリセットする用途（例: `none~5m`, `5m~nil`）。
 
 #### マルチパスパーサ
 

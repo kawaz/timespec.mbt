@@ -18,11 +18,12 @@ fn resolve_relative_with_anchor(
 
 /// Parses a time range with optional `since` and `until` bounds.
 ///
-/// Supports three input styles:
+/// Supports two input styles (mutually exclusive):
 ///
 /// 1. **Two-argument** (recommended): pass `since` and/or `until` individually.
 /// 2. **Tilde notation**: pass `input` as a tilde-delimited `"since~until"` string (e.g. `"5d~3m"`, `"5d~"`, `"~3m"`).
-/// 3. **Mixed**: explicit `since`/`until` override values derived from `input`.
+///
+/// `input` and `since`/`until` cannot be combined; doing so raises `ParseError`.
 ///
 /// Parameters:
 ///
@@ -32,7 +33,7 @@ fn resolve_relative_with_anchor(
 /// * `epoch` : Base epoch offset. Defaults to Unix epoch.
 /// * `default_sign` : Sign interpretation for unsigned durations. Defaults to `Plus`.
 /// * `now` : Clock function. Defaults to `@env.now`.
-/// * `default_tz_offset` : Default timezone for TZ-less datetimes. Defaults to `Utc`.
+/// * `default_tz_offset` : Default timezone for TZ-less datetimes. Defaults to `Local`.
 /// * `swap` : When `true`, swaps since/until if since > until. Defaults to `false`.
 /// * `parse_datetime` : Pluggable datetime parser. Defaults to `default_parse_datetime`.
 ///
