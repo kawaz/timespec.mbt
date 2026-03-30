@@ -2,6 +2,7 @@
 ///
 /// Uses the largest possible units (weeks, days, hours, minutes, seconds, ms)
 /// and omits zero-valued components. Zero duration is formatted as `"+0s"`.
+
 ///|
 fn format_duration(d : Duration) -> String {
   let ms = d.0
@@ -67,10 +68,11 @@ fn format_duration(d : Duration) -> String {
 /// * `epoch` : Epoch offset to add back to absolute values. Defaults to zero.
 ///
 /// Returns a string suitable for passing to `--since` or `--until` CLI arguments.
+
 ///|
 pub fn TimeSpec::to_cli_string(
   self : TimeSpec,
-  epoch~ : EpochTime = EpochTime(0L)
+  epoch? : EpochTime = EpochTime(0L),
 ) -> String {
   match self {
     Absolute(epoch_time, _) => {

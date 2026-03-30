@@ -1,40 +1,49 @@
 /// One millisecond.
+
 ///|
 pub let millisecond : Duration = Duration(1L)
 
 /// One second (1,000 ms).
+
 ///|
 pub let second : Duration = Duration(1_000L)
 
 /// One minute (60,000 ms).
+
 ///|
 pub let minute : Duration = Duration(60_000L)
 
 /// One hour (3,600,000 ms).
+
 ///|
 pub let hour : Duration = Duration(3_600_000L)
 
 /// One day (86,400,000 ms).
+
 ///|
 pub let day : Duration = Duration(86_400_000L)
 
 /// One week (604,800,000 ms).
+
 ///|
 pub let week : Duration = Duration(604_800_000L)
 
 /// Adds two durations.
+
 ///|
 pub impl Add for Duration with add(a, b) {
   Duration(a.0 + b.0)
 }
 
 /// Subtracts one duration from another.
+
 ///|
 pub impl Sub for Duration with sub(a, b) {
   Duration(a.0 - b.0)
 }
 
 /// Negates a duration, reversing its direction.
+
 ///|
 pub impl Neg for Duration with neg(self) {
   Duration(-self.0)
@@ -48,6 +57,7 @@ pub impl Neg for Duration with neg(self) {
 /// * `n` : The multiplier.
 ///
 /// Returns a new `Duration` whose millisecond value is `self * n`.
+
 ///|
 pub fn Duration::scale(self : Duration, n : Int64) -> Duration {
   Duration(self.0 * n)
@@ -61,6 +71,7 @@ pub fn Duration::scale(self : Duration, n : Int64) -> Duration {
 /// * `d` : The duration to add (may be negative to subtract).
 ///
 /// Returns a new `EpochTime` offset by `d` milliseconds.
+
 ///|
 pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime {
   EpochTime(self.0 + d.0)
@@ -68,12 +79,16 @@ pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime {
 
 /// Adds two `Int64` values with overflow detection.
 /// Raises `ParseError` with the given message if overflow occurs.
+
 ///|
-fn checked_add(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise ParseError {
+fn checked_add(
+  a : Int64,
+  b : Int64,
+  msg? : String = "overflow",
+) -> Int64 raise ParseError {
   let result = a + b
   // Overflow detection: sign has flipped
-  if (a > 0L && b > 0L && result < 0L) ||
-    (a < 0L && b < 0L && result > 0L) {
+  if (a > 0L && b > 0L && result < 0L) || (a < 0L && b < 0L && result > 0L) {
     raise ParseError(msg)
   }
   result
@@ -81,8 +96,13 @@ fn checked_add(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise 
 
 /// Multiplies two `Int64` values with overflow detection.
 /// Raises `ParseError` with the given message if overflow occurs.
+
 ///|
-fn checked_mul(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise ParseError {
+fn checked_mul(
+  a : Int64,
+  b : Int64,
+  msg? : String = "overflow",
+) -> Int64 raise ParseError {
   if a == 0L || b == 0L {
     return 0L
   }
@@ -110,10 +130,11 @@ fn checked_mul(a : Int64, b : Int64, msg~ : String = "overflow") -> Int64 raise 
 /// Returns a `Duration` in milliseconds.
 ///
 /// Raises `ParseError` if the input is empty, contains unknown units, or overflows.
+
 ///|
 pub fn parse_duration(
   input : String,
-  default_sign~ : Sign = Plus
+  default_sign? : Sign = Plus,
 ) -> Duration raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
@@ -190,7 +211,7 @@ pub fn parse_duration(
     // If not a digit, check for "ago"
     match s.get_char(pos) {
       Some(ch) =>
-        if not(ch.is_ascii_digit()) {
+        if !(ch.is_ascii_digit()) {
           // Check for "ago" modifier
           if try_match_word(s, pos, "ago") {
             group_ms = -group_ms
@@ -249,7 +270,7 @@ pub fn parse_duration(
       pos += 3
     }
   }
-  if not(parsed_any) {
+  if !(parsed_any) {
     raise ParseError("no duration segments found in: " + input)
   }
   // Flush the remaining group
@@ -272,6 +293,7 @@ pub fn parse_duration(
 
 /// Skips whitespace characters (space, tab) starting from `start`.
 /// Returns the position of the first non-whitespace character.
+
 ///|
 fn skip_spaces(s : StringView, start : Int) -> Int {
   let mut pos = start
@@ -290,8 +312,12 @@ fn skip_spaces(s : StringView, start : Int) -> Int {
 /// - `integer_part` : The whole number portion as `Int64`.
 /// - `fractional_part` : The decimal portion as `Double` (0.0 if absent).
 /// - `new_pos` : The position immediately after the parsed number.
+
 ///|
-fn parse_number(s : StringView, start : Int) -> (Int64, Double, Int) raise ParseError {
+fn parse_number(
+  s : StringView,
+  start : Int,
+) -> (Int64, Double, Int) raise ParseError {
   let mut pos = start
   let mut integer_part = 0L
   // Integer part
@@ -327,7 +353,8 @@ fn parse_number(s : StringView, start : Int) -> (Int64, Double, Int) raise Parse
           Some(c) =>
             if c.is_ascii_digit() {
               frac_digits += 1
-              frac_part = frac_part * 10.0 + (c.to_int() - '0'.to_int()).to_double()
+              frac_part = frac_part * 10.0 +
+                (c.to_int() - '0'.to_int()).to_double()
               pos += 1
             } else {
               break
@@ -349,6 +376,7 @@ fn parse_number(s : StringView, start : Int) -> (Int64, Double, Int) raise Parse
 
 /// Checks if `s[pos..]` starts with `word` and is followed by a non-alphabetic
 /// character or EOF (to prevent partial matches like "min" matching "minutes").
+
 ///|
 fn try_match_word(s : StringView, pos : Int, word : String) -> Bool {
   let wlen = word.length()
@@ -363,7 +391,7 @@ fn try_match_word(s : StringView, pos : Int, word : String) -> Bool {
   }
   // Must be followed by a non-alphabetic character or EOF (prevent partial matches)
   match s.get_char(pos + wlen) {
-    Some(c) => not(c.is_ascii_lowercase() || c.is_ascii_uppercase())
+    Some(c) => !(c.is_ascii_lowercase() || c.is_ascii_uppercase())
     None => true
   }
 }
@@ -375,11 +403,9 @@ fn try_match_word(s : StringView, pos : Int, word : String) -> Bool {
 /// - `end_pos` : The position immediately after the consumed unit string.
 ///
 /// Raises `ParseError` for unknown or sub-millisecond units (`us`, `ns`).
+
 ///|
-fn parse_unit(
-  s : StringView,
-  pos : Int
-) -> (Int64, Int) raise ParseError {
+fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
   match s.get_char(pos) {
     Some('w') =>
       match s.get_char(pos + 1) {
@@ -390,7 +416,9 @@ fn parse_unit(
             (week.0, pos + 4)
           } else {
             raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
+              "unknown unit at position " +
+              pos.to_string() +
+              " in: " +
               s.to_string(),
             )
           }
@@ -405,7 +433,9 @@ fn parse_unit(
             (day.0, pos + 3)
           } else {
             raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
+              "unknown unit at position " +
+              pos.to_string() +
+              " in: " +
               s.to_string(),
             )
           }
@@ -420,7 +450,9 @@ fn parse_unit(
             (hour.0, pos + 4)
           } else {
             raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
+              "unknown unit at position " +
+              pos.to_string() +
+              " in: " +
               s.to_string(),
             )
           }
@@ -442,7 +474,9 @@ fn parse_unit(
             (1L, pos + 11)
           } else {
             raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
+              "unknown unit at position " +
+              pos.to_string() +
+              " in: " +
               s.to_string(),
             )
           }
@@ -459,7 +493,9 @@ fn parse_unit(
             (second.0, pos + 3)
           } else {
             raise ParseError(
-              "unknown unit at position " + pos.to_string() + " in: " +
+              "unknown unit at position " +
+              pos.to_string() +
+              " in: " +
               s.to_string(),
             )
           }
@@ -468,9 +504,7 @@ fn parse_unit(
     Some('u') =>
       match s.get_char(pos + 1) {
         Some('s') =>
-          raise ParseError(
-            "sub-millisecond unit 'us' is not supported",
-          )
+          raise ParseError("sub-millisecond unit 'us' is not supported")
         _ =>
           raise ParseError(
             "unknown unit 'u' at position " +
@@ -482,9 +516,7 @@ fn parse_unit(
       // μ (U+03BC)
       match s.get_char(pos + 1) {
         Some('s') =>
-          raise ParseError(
-            "sub-millisecond unit '\u03BCs' is not supported",
-          )
+          raise ParseError("sub-millisecond unit '\u03BCs' is not supported")
         _ =>
           raise ParseError(
             "unknown unit '\u03BC' at position " +
@@ -495,9 +527,7 @@ fn parse_unit(
     Some('n') =>
       match s.get_char(pos + 1) {
         Some('s') =>
-          raise ParseError(
-            "sub-millisecond unit 'ns' is not supported",
-          )
+          raise ParseError("sub-millisecond unit 'ns' is not supported")
         _ =>
           raise ParseError(
             "unknown unit 'n' at position " +

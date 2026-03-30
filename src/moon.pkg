@@ -4,12 +4,12 @@ import {
 }
 
 options(
-  "native-stub": ["tz_native_stub.c"],
+  "native-stub": [ "tz_native_stub.c" ],
   targets: {
-    "tz_js.mbt": ["js"],
-    "tz_js_test.mbt": ["js"],
-    "tz_native.mbt": ["native", "llvm"],
-    "tz_native_wbtest.mbt": ["native", "llvm"],
-    "tz_wasm.mbt": ["wasm", "wasm-gc"],
+    "tz_js.mbt": [ "js" ],
+    "tz_js_test.mbt": [ "js" ],
+    "tz_native.mbt": [ "native", "llvm" ],
+    "tz_native_wbtest.mbt": [ "native", "llvm" ],
+    "tz_wasm.mbt": [ "wasm", "wasm-gc" ],
   },
 )

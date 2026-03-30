@@ -1,11 +1,14 @@
-///| C: setenv(name, value, overwrite)
+///|
+/// C: setenv(name, value, overwrite)
 #borrow(name, value)
 extern "C" fn setenv(name : Bytes, value : Bytes, overwrite : Int) -> Int = "setenv"
 
-///| C: tzset() — TZ 環境変数の変更を反映
+///|
+/// C: tzset() — TZ 環境変数の変更を反映
 extern "C" fn tzset() = "tzset"
 
-///| ヘルパー: MoonBit 文字列を null 終端 UTF-8 Bytes に変換
+///|
+/// ヘルパー: MoonBit 文字列を null 終端 UTF-8 Bytes に変換
 fn to_c_string(s : String) -> Bytes {
   let buf = @buffer.new()
   buf.write_string_utf8(s.view())
@@ -13,7 +16,8 @@ fn to_c_string(s : String) -> Bytes {
   buf.to_bytes()
 }
 
-///| ヘルパー: TZ 環境変数を設定して tzset を呼ぶ
+///|
+/// ヘルパー: TZ 環境変数を設定して tzset を呼ぶ
 fn set_tz(tz : String) -> Unit {
   let _ = setenv(b"TZ\x00", to_c_string(tz), 1)
   tzset()

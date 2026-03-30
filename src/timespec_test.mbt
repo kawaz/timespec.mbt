@@ -1,30 +1,36 @@
 ///|
 fn test_now() -> UInt64 {
-  1_000_000UL  // 1,000,000 ms = 1000 seconds
+  1_000_000UL // 1,000,000 ms = 1000 seconds
 }
 
 ///|
 test "parse_timespec: duration only (Relative)" {
-  inspect(@timespec.parse_timespec("5m", now=test_now, default_sign=Minus), content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("5m", now=test_now, default_sign=Minus),
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: @ prefix (Absolute)" {
-  inspect(@timespec.parse_timespec("@5m", now=test_now, default_sign=Minus), content=(
-    #|Some(Absolute(EpochTime(700000), Duration(-300000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("@5m", now=test_now, default_sign=Minus),
+    content=(
+      #|Some(Absolute(EpochTime(700000), Duration(-300000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: @ suffix (Absolute)" {
-  inspect(@timespec.parse_timespec("-5h@", now=test_now, default_sign=Minus), content=(
-    #|Some(Absolute(EpochTime(-17000000), Duration(-18000000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("-5h@", now=test_now, default_sign=Minus),
+    content=(
+      #|Some(Absolute(EpochTime(-17000000), Duration(-18000000)))
+    ),
+  )
 }
 
 ///|
@@ -36,53 +42,73 @@ test "parse_timespec: @-5h equals -5h@" {
 
 ///|
 test "parse_timespec: datetime only (Absolute)" {
-  inspect(@timespec.parse_timespec("2024-01-01T12:00:00Z", now=test_now), content=(
-    #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("2024-01-01T12:00:00Z", now=test_now),
+    content=(
+      #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: datetime + duration" {
   // 2024-01-01T12:00:00Z + 5h30m
-  inspect(@timespec.parse_timespec("2024-01-01T12:00:00Z+5h30m", now=test_now), content=(
-    #|Some(Absolute(EpochTime(1704130200000), Duration(19800000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("2024-01-01T12:00:00Z+5h30m", now=test_now),
+    content=(
+      #|Some(Absolute(EpochTime(1704130200000), Duration(19800000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: duration + datetime" {
   // 30m before 2024-01-01T12:00:00Z (default_sign=Plus なので +30m)
   // duration 前の符号は default_sign に従う
-  inspect(@timespec.parse_timespec("30m2024-01-01T12:00:00Z", now=test_now, default_sign=Minus), content=(
-    #|Some(Absolute(EpochTime(1704108600000), Duration(-1800000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec(
+      "30m2024-01-01T12:00:00Z",
+      now=test_now,
+      default_sign=Minus,
+    ),
+    content=(
+      #|Some(Absolute(EpochTime(1704108600000), Duration(-1800000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: duration + datetime + duration" {
-  inspect(@timespec.parse_timespec("30m2024-01-01T12:00:00Z+5h30m", now=test_now, default_sign=Minus), content=(
-    #|Some(Absolute(EpochTime(1704128400000), Duration(18000000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec(
+      "30m2024-01-01T12:00:00Z+5h30m",
+      now=test_now,
+      default_sign=Minus,
+    ),
+    content=(
+      #|Some(Absolute(EpochTime(1704128400000), Duration(18000000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: positive duration (Relative)" {
-  inspect(@timespec.parse_timespec("+5m", now=test_now), content=(
-    #|Some(Relative(EpochTime(1300000), Duration(300000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("+5m", now=test_now),
+    content=(
+      #|Some(Relative(EpochTime(1300000), Duration(300000)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: negative duration (Relative)" {
-  inspect(@timespec.parse_timespec("-5m", now=test_now), content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec("-5m", now=test_now),
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
 }
 
 ///|
@@ -100,10 +126,16 @@ test "parse_timespec: garbage after datetime" {
 ///|
 test "parse_timespec: Reject with datetime (no error)" {
   // datetime 入力は符号不要
-  inspect(@timespec.parse_timespec("2024-01-01T12:00:00Z", now=test_now, default_sign=Reject), content=(
-    #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
-
-  ))
+  inspect(
+    @timespec.parse_timespec(
+      "2024-01-01T12:00:00Z",
+      now=test_now,
+      default_sign=Reject,
+    ),
+    content=(
+      #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
+    ),
+  )
 }
 
 ///|
@@ -119,16 +151,23 @@ test "parse_timespec: custom epoch (Snowflake)" {
   let now_fn = fn() -> UInt64 { 1_700_000_000_000UL }
   let ts = @timespec.parse_timespec("0s", epoch=snowflake_epoch, now=now_fn)
   // epoch relative の now
-  inspect(ts, content=(
-    #|Some(Relative(EpochTime(411165025343), Duration(0)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Relative(EpochTime(411165025343), Duration(0)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: default epoch is Unix" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
-  let a = @timespec.parse_timespec("5m", epoch=@timespec.EpochTime(0L), now=now_fn, default_sign=Minus)
+  let a = @timespec.parse_timespec(
+    "5m",
+    epoch=@timespec.EpochTime(0L),
+    now=now_fn,
+    default_sign=Minus,
+  )
   let b = @timespec.parse_timespec("5m", now=now_fn, default_sign=Minus)
   assert_true(a == b)
 }
@@ -139,11 +178,17 @@ test "parse_timespec: custom epoch with datetime" {
   let now_fn = fn() -> UInt64 { 1_700_000_000_000UL }
   // datetime "2024-01-01T12:00:00Z" = 1704110400000 Unix ms
   // epoch relative = 1704110400000 - 1288834974657 = 415275425343
-  let ts = @timespec.parse_timespec("2024-01-01T12:00:00Z", epoch=snowflake_epoch, now=now_fn)
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(415275425343), Duration(0)))
-
-  ))
+  let ts = @timespec.parse_timespec(
+    "2024-01-01T12:00:00Z",
+    epoch=snowflake_epoch,
+    now=now_fn,
+  )
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(415275425343), Duration(0)))
+    ),
+  )
 }
 
 ///|
@@ -161,32 +206,41 @@ test "parse_timespec: time-of-day reset @00:00" {
   let now_fn = fn() -> UInt64 { 1_000_000_000UL } // some now
   let ts = @timespec.parse_timespec("@00:00", now=now_fn, default_tz_offset=Utc)
   // should be today's midnight UTC
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(950400000), Duration(0)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(950400000), Duration(0)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: time-of-day @10:30" {
   let now_fn = fn() -> UInt64 { 1_000_000_000UL }
   let ts = @timespec.parse_timespec("@10:30", now=now_fn, default_tz_offset=Utc)
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(988200000), Duration(0)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(988200000), Duration(0)))
+    ),
+  )
 }
 
 ///|
 test "parse_timespec: time-of-day with duration @00:00+3h" {
   let now_fn = fn() -> UInt64 { 1_000_000_000UL }
   let ts = @timespec.parse_timespec(
-    "@00:00+3h", now=now_fn, default_tz_offset=Utc, default_sign=Plus,
+    "@00:00+3h",
+    now=now_fn,
+    default_tz_offset=Utc,
+    default_sign=Plus,
   )
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(961200000), Duration(10800000)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(961200000), Duration(10800000)))
+    ),
+  )
 }
 
 ///|
@@ -194,10 +248,12 @@ test "parse_timespec: raw epoch ms (@DIGITS)" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   // @1704110400000 → EpochTime(1704110400000) = 2024-01-01T12:00:00Z
   let ts = @timespec.parse_timespec("@1704110400000", now=now_fn)
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
+    ),
+  )
 }
 
 ///|
@@ -205,10 +261,12 @@ test "parse_timespec: raw epoch ms with duration" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   // @1704110400000+1h → EpochTime(1704110400000 + 3600000)
   let ts = @timespec.parse_timespec("@1704110400000+1h", now=now_fn)
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(1704114000000), Duration(3600000)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(1704114000000), Duration(3600000)))
+    ),
+  )
 }
 
 ///|
@@ -216,10 +274,12 @@ test "parse_timespec: @2026 is raw epoch not year" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   let ts = @timespec.parse_timespec("@2026", now=now_fn)
   // 2026ms from epoch, NOT 2026-01-01
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(2026), Duration(0)))
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(2026), Duration(0)))
+    ),
+  )
 }
 
 ///|
@@ -227,11 +287,12 @@ test "parse_timespec: @-100 negative raw epoch" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   let ts = @timespec.parse_timespec("@-100", now=now_fn)
   // 100ms before epoch
-  inspect(ts, content=(
-    #|Some(Absolute(EpochTime(-100), Duration(0)))
-
-
-  ))
+  inspect(
+    ts,
+    content=(
+      #|Some(Absolute(EpochTime(-100), Duration(0)))
+    ),
+  )
 }
 
 ///|
@@ -244,7 +305,10 @@ test "parse_timespec: time-of-day single digit" {
 
 ///|
 test "TimeSpec accessors" {
-  let ts : @timespec.TimeSpec = Absolute(@timespec.EpochTime(700000L), @timespec.Duration(-300000L))
+  let ts : @timespec.TimeSpec = Absolute(
+    @timespec.EpochTime(700000L),
+    @timespec.Duration(-300000L),
+  )
   inspect(ts.epoch(), content="EpochTime(700000)")
   inspect(ts.duration(), content="Duration(-300000)")
   assert_true(ts.is_absolute())
@@ -311,14 +375,28 @@ test "parse_timespec: NONE case insensitive" {
 
 ///|
 test "parse_range: none~5m" {
-  let r = @timespec.parse_range(input="none~5m", now=range_test_now, default_sign=Minus)
+  let r = @timespec.parse_range(
+    input="none~5m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
   inspect(r.since, content="None")
-  inspect(r.until, content="Some(Relative(EpochTime(700000), Duration(-300000)))")
+  inspect(
+    r.until,
+    content="Some(Relative(EpochTime(700000), Duration(-300000)))",
+  )
 }
 
 ///|
 test "parse_range: 5m~none" {
-  let r = @timespec.parse_range(input="5m~none", now=range_test_now, default_sign=Minus)
-  inspect(r.since, content="Some(Relative(EpochTime(700000), Duration(-300000)))")
+  let r = @timespec.parse_range(
+    input="5m~none",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  inspect(
+    r.since,
+    content="Some(Relative(EpochTime(700000), Duration(-300000)))",
+  )
   inspect(r.until, content="None")
 }

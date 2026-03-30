@@ -5,38 +5,67 @@ fn range_test_now() -> UInt64 {
 
 ///|
 test "parse_range: since single value" {
-  let r = @timespec.parse_range(since="5m", now=range_test_now, default_sign=Minus)
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|None
-  ))
+  let r = @timespec.parse_range(
+    since="5m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|None
+    ),
+  )
 }
 
 ///|
 test "parse_range: until single value" {
-  let r = @timespec.parse_range(until="5m", now=range_test_now, default_sign=Minus)
-  inspect(r.since, content=(
-    #|None
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
+  let r = @timespec.parse_range(
+    until="5m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  inspect(
+    r.since,
+    content=(
+      #|None
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: both relative independent" {
   // Both Relative → 独立解決（各自 now 基準）
   let r = @timespec.parse_range(
-    since="5m", until="3m", now=range_test_now, default_sign=Minus,
+    since="5m",
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
@@ -44,191 +73,324 @@ test "parse_range: mixed - until absolute anchor" {
   // 5m~@3m: Mixed → @ 側 (until) が anchor
   // until = A(now-3m), since = R(until-5m)
   let r = @timespec.parse_range(
-    since="5m", until="@3m", now=range_test_now, default_sign=Minus,
+    since="5m",
+    until="@3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(520000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Absolute(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(520000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Absolute(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: both absolute independent" {
   // @5m~@3m: 両方 Absolute → 独立解決
   let r = @timespec.parse_range(
-    since="@5m", until="@3m", now=range_test_now, default_sign=Minus,
+    since="@5m",
+    until="@3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Absolute(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Absolute(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Absolute(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Absolute(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: @ with explicit sign" {
   // @5m~@+3m
   let r = @timespec.parse_range(
-    since="@5m", until="@+3m", now=range_test_now, default_sign=Minus,
+    since="@5m",
+    until="@+3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Absolute(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Absolute(EpochTime(1180000), Duration(180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Absolute(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Absolute(EpochTime(1180000), Duration(180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: swap" {
   // swap=true: since > until なら入れ替え
   let r = @timespec.parse_range(
-    since="3m", until="5m", now=range_test_now, default_sign=Minus, swap=true,
+    since="3m",
+    until="5m",
+    now=range_test_now,
+    default_sign=Minus,
+    swap=true,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: empty since" {
   // since is empty, only until
   let r = @timespec.parse_range(
-    until="3m", now=range_test_now, default_sign=Minus,
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|None
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|None
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: explicit positive sign on until" {
   let r = @timespec.parse_range(
-    since="5m", until="+3m", now=range_test_now, default_sign=Minus,
+    since="5m",
+    until="+3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(1180000), Duration(180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(1180000), Duration(180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: explicit negative sign on until" {
   let r = @timespec.parse_range(
-    since="5m", until="-3m", now=range_test_now, default_sign=Minus,
+    since="5m",
+    until="-3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: mixed - since absolute anchor" {
   // @5m~3m: since=A(now-5m), until=R(since-3m)
   let r = @timespec.parse_range(
-    since="@5m", until="3m", now=range_test_now, default_sign=Minus,
+    since="@5m",
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Absolute(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(520000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Absolute(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(520000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: mixed - until absolute, since relative" {
   // Range + Mixed → absolute 側が anchor
   let r = @timespec.parse_range(
-    since="5m", until="@3m", now=range_test_now, default_sign=Minus,
+    since="5m",
+    until="@3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Relative(EpochTime(520000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Absolute(EpochTime(820000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Relative(EpochTime(520000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Absolute(EpochTime(820000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: mixed - since absolute, until relative (until context equivalent)" {
   let r = @timespec.parse_range(
-    since="@5m", until="3m", now=range_test_now, default_sign=Minus,
+    since="@5m",
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
   )
-  inspect(r.since, content=(
-    #|Some(Absolute(EpochTime(700000), Duration(-300000)))
-  ))
-  inspect(r.until, content=(
-    #|Some(Relative(EpochTime(520000), Duration(-180000)))
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|Some(Absolute(EpochTime(700000), Duration(-300000)))
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|Some(Relative(EpochTime(520000), Duration(-180000)))
+    ),
+  )
 }
 
 ///|
 test "parse_range: both empty returns empty range" {
   let r = @timespec.parse_range(now=range_test_now, default_sign=Minus)
-  inspect(r.since, content=(
-    #|None
-  ))
-  inspect(r.until, content=(
-    #|None
-  ))
+  inspect(
+    r.since,
+    content=(
+      #|None
+    ),
+  )
+  inspect(
+    r.until,
+    content=(
+      #|None
+    ),
+  )
 }
 
 ///|
 test "parse_range: invalid input raises error" {
   let r = try? @timespec.parse_range(
-    since="invalid_xyz", now=range_test_now, default_sign=Minus,
+    since="invalid_xyz",
+    now=range_test_now,
+    default_sign=Minus,
   )
   assert_true(r is Err(_))
 }
 
 ///|
 test "parse_range: input~ with tilde" {
-  let a = @timespec.parse_range(since="5m", until="3m", now=range_test_now, default_sign=Minus)
-  let b = @timespec.parse_range(input="5m~3m", now=range_test_now, default_sign=Minus)
+  let a = @timespec.parse_range(
+    since="5m",
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  let b = @timespec.parse_range(
+    input="5m~3m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
   assert_true(a == b)
 }
 
 ///|
 test "parse_range: input~ since only (5d~)" {
-  let a = @timespec.parse_range(since="5d", now=range_test_now, default_sign=Minus)
-  let b = @timespec.parse_range(input="5d~", now=range_test_now, default_sign=Minus)
+  let a = @timespec.parse_range(
+    since="5d",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  let b = @timespec.parse_range(
+    input="5d~",
+    now=range_test_now,
+    default_sign=Minus,
+  )
   assert_true(a == b)
 }
 
 ///|
 test "parse_range: input~ until only (~3m)" {
-  let a = @timespec.parse_range(until="3m", now=range_test_now, default_sign=Minus)
-  let b = @timespec.parse_range(input="~3m", now=range_test_now, default_sign=Minus)
+  let a = @timespec.parse_range(
+    until="3m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  let b = @timespec.parse_range(
+    input="~3m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
   assert_true(a == b)
 }
 
 ///|
 test "parse_range: input~ no tilde (since only)" {
-  let a = @timespec.parse_range(since="5m", now=range_test_now, default_sign=Minus)
-  let b = @timespec.parse_range(input="5m", now=range_test_now, default_sign=Minus)
+  let a = @timespec.parse_range(
+    since="5m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
+  let b = @timespec.parse_range(
+    input="5m",
+    now=range_test_now,
+    default_sign=Minus,
+  )
   assert_true(a == b)
 }
 
 ///|
 test "parse_range: input and since/until together is error" {
   let r = try? @timespec.parse_range(
-    input="99d~99d", since="5m",
-    now=range_test_now, default_sign=Minus,
+    input="99d~99d",
+    since="5m",
+    now=range_test_now,
+    default_sign=Minus,
   )
   assert_true(r is Err(_))
 }
@@ -236,7 +398,10 @@ test "parse_range: input and since/until together is error" {
 ///|
 test "parse_range: no arguments" {
   let r = @timespec.parse_range()
-  inspect(r, content=(
-    #|{since: None, until: None}
-  ))
+  inspect(
+    r,
+    content=(
+      #|{since: None, until: None}
+    ),
+  )
 }

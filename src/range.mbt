@@ -1,9 +1,10 @@
 /// Recalculates a `Relative` TimeSpec's epoch using `anchor_epoch` as the base
 /// instead of `now`. `Absolute` timespecs are returned unchanged.
+
 ///|
 fn resolve_relative_with_anchor(
   ts : TimeSpec,
-  anchor_epoch : Int64
+  anchor_epoch : Int64,
 ) -> TimeSpec {
   match ts {
     Absolute(_, _) => ts // Absolute remains unchanged
@@ -37,25 +38,24 @@ fn resolve_relative_with_anchor(
 ///
 /// Returns a `TimeRange` with anchor resolution applied when one side is
 /// `Absolute` and the other is `Relative`.
+
 ///|
 pub fn parse_range(
-  input~ : String = "",
-  since~ : String = "",
-  until~ : String = "",
-  epoch~ : EpochTime = EpochTime(0L),
-  default_sign~ : Sign = Plus,
-  default_tz_offset~ : TzOffset = Local,
-  now~ : () -> UInt64 = @env.now,
-  swap~ : Bool = false,
-  parse_datetime~ : (String) -> Int64? = default_parse_datetime
+  input? : String = "",
+  since? : String = "",
+  until? : String = "",
+  epoch? : EpochTime = EpochTime(0L),
+  default_sign? : Sign = Plus,
+  default_tz_offset? : TzOffset = Local,
+  now? : () -> UInt64 = @env.now,
+  swap? : Bool = false,
+  parse_datetime? : (String) -> Int64? = default_parse_datetime,
 ) -> TimeRange raise ParseError {
   // Mutual exclusion check between input and since/until
   let mut since = since
   let mut until = until
   if input.length() > 0 && (since.length() > 0 || until.length() > 0) {
-    raise ParseError(
-      "cannot specify both input and since/until in parse_range",
-    )
+    raise ParseError("cannot specify both input and since/until in parse_range")
   }
   // Expand since/until from input
   if input.length() > 0 {
@@ -70,7 +70,12 @@ pub fn parse_range(
   // Parse since (if non-empty)
   let mut since_ts : TimeSpec? = if since.trim().length() > 0 {
     parse_timespec(
-      since, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
+      since,
+      epoch~,
+      default_sign~,
+      default_tz_offset~,
+      now~,
+      parse_datetime~,
     )
   } else {
     None
@@ -78,7 +83,12 @@ pub fn parse_range(
   // Parse until (if non-empty)
   let mut until_ts : TimeSpec? = if until.trim().length() > 0 {
     parse_timespec(
-      until, epoch~, default_sign~, default_tz_offset~, now~, parse_datetime~,
+      until,
+      epoch~,
+      default_sign~,
+      default_tz_offset~,
+      now~,
+      parse_datetime~,
     )
   } else {
     None
@@ -112,23 +122,26 @@ pub fn parse_range(
 /// When one side is `Absolute` and the other is `Relative`, the absolute side
 /// becomes the anchor and the relative side is recalculated against it.
 /// When both are the same kind, they remain independently resolved.
+
 ///|
 fn resolve_anchor(
   since_ts : TimeSpec,
-  until_ts : TimeSpec
+  until_ts : TimeSpec,
 ) -> (TimeSpec, TimeSpec) {
   let s_abs = since_ts.is_absolute()
   let u_abs = until_ts.is_absolute()
-  if s_abs && not(u_abs) {
+  if s_abs && !(u_abs) {
     // since is Absolute -> recalculate until relative to since
     let resolved = resolve_relative_with_anchor(
-      until_ts, since_ts.to_epoch_ms(),
+      until_ts,
+      since_ts.to_epoch_ms(),
     )
     (since_ts, resolved)
-  } else if u_abs && not(s_abs) {
+  } else if u_abs && !(s_abs) {
     // until is Absolute -> recalculate since relative to until
     let resolved = resolve_relative_with_anchor(
-      since_ts, until_ts.to_epoch_ms(),
+      since_ts,
+      until_ts.to_epoch_ms(),
     )
     (resolved, until_ts)
   } else {

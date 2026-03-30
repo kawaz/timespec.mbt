@@ -5,10 +5,12 @@
 ///
 /// Supports arithmetic via `Add`, `Sub`, and `Neg` trait implementations,
 /// as well as scalar multiplication via `Duration::scale`.
+
 ///|
 pub(all) struct Duration(Int64) derive(Eq, Show, Compare)
 
 /// Returns the duration value in milliseconds.
+
 ///|
 pub fn Duration::to_ms(self : Duration) -> Int64 {
   self.0
@@ -19,10 +21,12 @@ pub fn Duration::to_ms(self : Duration) -> Int64 {
 /// Unlike `Duration` which represents a span of time, `EpochTime` represents
 /// a specific instant. The epoch is Unix epoch (1970-01-01T00:00:00Z) by default,
 /// but can be shifted via the `epoch` parameter in parse functions.
+
 ///|
 pub(all) struct EpochTime(Int64) derive(Eq, Show, Compare)
 
 /// Returns the epoch time value in milliseconds.
+
 ///|
 pub fn EpochTime::to_ms(self : EpochTime) -> Int64 {
   self.0
@@ -40,6 +44,7 @@ pub fn EpochTime::to_ms(self : EpochTime) -> Int64 {
 ///
 /// The `Duration` field preserves the original offset information for re-serialization.
 /// For datetime-only inputs, the `Duration` is `Duration(0L)`.
+
 ///|
 pub(all) enum TimeSpec {
   Absolute(EpochTime, Duration)
@@ -47,6 +52,7 @@ pub(all) enum TimeSpec {
 } derive(Eq, Show)
 
 /// Returns the resolved epoch time.
+
 ///|
 pub fn TimeSpec::epoch(self : TimeSpec) -> EpochTime {
   match self {
@@ -55,6 +61,7 @@ pub fn TimeSpec::epoch(self : TimeSpec) -> EpochTime {
 }
 
 /// Returns the duration offset used to compute the epoch time.
+
 ///|
 pub fn TimeSpec::duration(self : TimeSpec) -> Duration {
   match self {
@@ -63,6 +70,7 @@ pub fn TimeSpec::duration(self : TimeSpec) -> Duration {
 }
 
 /// Returns whether this is an absolute time specification.
+
 ///|
 pub fn TimeSpec::is_absolute(self : TimeSpec) -> Bool {
   match self {
@@ -72,6 +80,7 @@ pub fn TimeSpec::is_absolute(self : TimeSpec) -> Bool {
 }
 
 /// Returns the resolved epoch time in milliseconds.
+
 ///|
 pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64 {
   self.epoch().0
@@ -82,6 +91,7 @@ pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64 {
 /// Either or both fields may be `None` to represent an open-ended range.
 /// When both are present and one is `Absolute` while the other is `Relative`,
 /// the absolute side serves as an anchor for resolving the relative side.
+
 ///|
 pub(all) struct TimeRange {
   since : TimeSpec?
@@ -96,6 +106,7 @@ pub(all) struct TimeRange {
 /// - `Minus` — unsigned means negative (e.g. `--since 5m` means "5 minutes ago").
 /// - `Plus` — unsigned means positive (e.g. `set_timer("3m")` means "3 minutes from now").
 /// - `Reject` — unsigned is an error; an explicit sign is required to avoid ambiguity.
+
 ///|
 pub(all) enum Sign {
   Minus
@@ -109,6 +120,7 @@ pub(all) enum Sign {
 /// - `Local` — resolved at runtime to the system's local timezone offset.
 /// - `Hour(n)` — offset in whole hours (e.g. `Hour(9)` for `+09:00`).
 /// - `Min(n)` — offset in minutes for non-whole-hour zones (e.g. `Min(330)` for `+05:30`).
+
 ///|
 pub(all) enum TzOffset {
   Utc
@@ -120,8 +132,8 @@ pub(all) enum TzOffset {
 /// Error type raised when parsing fails.
 ///
 /// Contains a human-readable message describing the parse failure.
+
 ///|
 pub(all) suberror ParseError {
   ParseError(String)
 } derive(Eq, Show)
-

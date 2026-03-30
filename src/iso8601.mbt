@@ -13,11 +13,10 @@
 /// * `input` : The datetime string to parse.
 ///
 /// Returns `Some(epoch_ms)` on success, or `None` if parsing fails.
+
 ///|
 pub fn default_parse_datetime(input : String) -> Int64? {
-  try {
-    Some(parse_iso8601(input))
-  } catch {
+  Some(parse_iso8601(input)) catch {
     _ => None
   }
 }
@@ -29,14 +28,13 @@ pub fn default_parse_datetime(input : String) -> Int64? {
 /// let parse_jst = make_parse_datetime(default_tz_offset=Hour(9))
 /// parse_timespec("2026-03-15T12:00:00", parse_datetime=parse_jst)
 /// ```
+
 ///|
 pub fn make_parse_datetime(
-  default_tz_offset~ : TzOffset = Local
+  default_tz_offset? : TzOffset = Local,
 ) -> (String) -> Int64? {
   fn(input) {
-    try {
-      Some(parse_iso8601(input, default_tz_offset~))
-    } catch {
+    Some(parse_iso8601(input, default_tz_offset~)) catch {
       _ => None
     }
   }
@@ -51,10 +49,11 @@ pub fn make_parse_datetime(
 ///
 /// Returns `(epoch_ms, Some(tz))` when the input has an explicit timezone,
 /// or `(epoch_ms, None)` when `default_tz_offset` was used as fallback.
+
 ///|
 fn parse_iso8601_with_tz(
   input : String,
-  default_tz_offset~ : TzOffset = Local
+  default_tz_offset? : TzOffset = Local,
 ) -> (Int64, TzOffset?) raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
@@ -62,7 +61,7 @@ fn parse_iso8601_with_tz(
   }
   let mut pos = 0
   // Check if it starts with a 4-digit year
-  let is_time_only = not(is_four_digits_at_sv(s, 0))
+  let is_time_only = !(is_four_digits_at_sv(s, 0))
   let mut year = 1970
   let mut month = 1
   let mut day = 1
@@ -123,7 +122,14 @@ fn parse_iso8601_with_tz(
     }
     let (tz, parsed_tz) = resolve_tz(has_tz, tz_offset_min, default_tz_offset)
     let epoch = datetime_to_epoch(
-      year, month, day, hour, min, sec, ms, tz_offset=tz,
+      year,
+      month,
+      day,
+      hour,
+      min,
+      sec,
+      ms,
+      tz_offset=tz,
     )
     return (epoch, parsed_tz)
   }
@@ -136,7 +142,7 @@ fn parse_iso8601_with_tz(
     Some('-') | Some('/') => true
     _ => false
   }
-  if not(has_date_sep) && not(is_digit_at(s, pos)) {
+  if !(has_date_sep) && !(is_digit_at(s, pos)) {
     raise ParseError("incomplete date (year-only): " + input)
   }
   pos = skip_date_sep(s, pos)
@@ -144,10 +150,12 @@ fn parse_iso8601_with_tz(
   month = m
   pos = p2
   // Day (required)
-  if not(match s.get_char(pos) {
-    Some('-') | Some('/') => true
-    _ => is_digit_at(s, pos) && not(has_date_sep)
-  }) {
+  if !(
+      match s.get_char(pos) {
+        Some('-') | Some('/') => true
+        _ => is_digit_at(s, pos) && !(has_date_sep)
+      },
+    ) {
     raise ParseError("incomplete date (year-month only): " + input)
   }
   pos = skip_date_sep(s, pos)
@@ -178,10 +186,11 @@ fn parse_iso8601_with_tz(
           min = m
           pos = p5
           // Seconds (optional)
-          if pos < s.length() && (match s.get_char(pos) {
-            Some(':') => true
-            _ => is_digit_at(s, pos) && not(has_time_sep)
-          }) {
+          if pos < s.length() &&
+            (match s.get_char(pos) {
+              Some(':') => true
+              _ => is_digit_at(s, pos) && !(has_time_sep)
+            }) {
             pos = skip_time_sep(s, pos)
             let (sc, p6) = parse_int_digits(s, pos, 1, 2)
             sec = sc
@@ -218,7 +227,16 @@ fn parse_iso8601_with_tz(
     )
   }
   let (tz, parsed_tz) = resolve_tz(has_tz, tz_offset_min, default_tz_offset)
-  let epoch = datetime_to_epoch(year, month, day, hour, min, sec, ms, tz_offset=tz)
+  let epoch = datetime_to_epoch(
+    year,
+    month,
+    day,
+    hour,
+    min,
+    sec,
+    ms,
+    tz_offset=tz,
+  )
   (epoch, parsed_tz)
 }
 
@@ -230,6 +248,7 @@ fn parse_iso8601_with_tz(
 /// This is independent of the datetime parser, so it works with any format
 /// (ISO 8601, locale-specific, etc.) as long as the TZ suffix follows
 /// standard notation.
+
 ///|
 fn detect_tz_suffix(input : String) -> TzOffset? {
   let s : StringView = input
@@ -253,8 +272,12 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
       Some(':') => true
       _ => false
     }
-    if is_sign && has_colon && is_digit_at(s, p + 1) && is_digit_at(s, p + 2) &&
-      is_digit_at(s, p + 4) && is_digit_at(s, p + 5) {
+    if is_sign &&
+      has_colon &&
+      is_digit_at(s, p + 1) &&
+      is_digit_at(s, p + 2) &&
+      is_digit_at(s, p + 4) &&
+      is_digit_at(s, p + 5) {
       let sign = match s.get_char(p) {
         Some('-') => -1
         _ => 1
@@ -271,8 +294,11 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
       Some('+') | Some('-') => true
       _ => false
     }
-    if is_sign && is_digit_at(s, p + 1) && is_digit_at(s, p + 2) &&
-      is_digit_at(s, p + 3) && is_digit_at(s, p + 4) {
+    if is_sign &&
+      is_digit_at(s, p + 1) &&
+      is_digit_at(s, p + 2) &&
+      is_digit_at(s, p + 3) &&
+      is_digit_at(s, p + 4) {
       let sign = match s.get_char(p) {
         Some('-') => -1
         _ => 1
@@ -294,7 +320,7 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
           // Check all chars after sign are digits
           let mut all_digits = true
           for i in (p + 1)..<len {
-            if not(is_digit_at(s, i)) {
+            if !(is_digit_at(s, i)) {
               all_digits = false
               break
             }
@@ -334,6 +360,7 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
 }
 
 /// Returns the numeric value of the ASCII digit at position `pos`.
+
 ///|
 fn digit_value_at(s : StringView, pos : Int) -> Int {
   match s.get_char(pos) {
@@ -345,10 +372,11 @@ fn digit_value_at(s : StringView, pos : Int) -> Int {
 /// Parses timezone suffix (Z, +HH:MM, -HH:MM, etc.) from position `pos`.
 ///
 /// Returns `(has_tz, tz_offset_min, new_pos)`.
+
 ///|
 fn parse_tz_suffix(
   s : StringView,
-  pos : Int
+  pos : Int,
 ) -> (Bool, Int, Int) raise ParseError {
   let mut p = pos
   let mut has_tz = false
@@ -399,11 +427,12 @@ fn parse_tz_suffix(
 ///
 /// Returns `(tz_to_use, parsed_tz_option)` where `parsed_tz_option` is `Some`
 /// only when the input contained an explicit timezone.
+
 ///|
 fn resolve_tz(
   has_tz : Bool,
   tz_offset_min : Int,
-  default_tz_offset : TzOffset
+  default_tz_offset : TzOffset,
 ) -> (TzOffset, TzOffset?) {
   if has_tz {
     let parsed_tz = normalize_tz_offset(tz_offset_min)
@@ -418,10 +447,11 @@ fn resolve_tz(
 /// Handles date, time, fractional seconds, and timezone offset components.
 /// Also supports time-only inputs like `HH:MM[:SS[.mmm]][TZ]` (assumed 1970-01-01).
 /// Raises `ParseError` on malformed input.
+
 ///|
 fn parse_iso8601(
   input : String,
-  default_tz_offset~ : TzOffset = Local
+  default_tz_offset? : TzOffset = Local,
 ) -> Int64 raise ParseError {
   parse_iso8601_with_tz(input, default_tz_offset~).0
 }
@@ -433,12 +463,13 @@ fn parse_iso8601(
 /// - `new_pos` : The position immediately after the consumed digits.
 ///
 /// Raises `ParseError` if fewer than `min_digits` are found.
+
 ///|
 fn parse_int_digits(
   s : StringView,
   start : Int,
   min_digits : Int,
-  max_digits : Int
+  max_digits : Int,
 ) -> (Int, Int) raise ParseError {
   let mut pos = start
   let mut value = 0
@@ -468,6 +499,7 @@ fn parse_int_digits(
 }
 
 /// Returns whether the character at position `pos` is an ASCII digit.
+
 ///|
 fn is_digit_at(s : StringView, pos : Int) -> Bool {
   match s.get_char(pos) {
@@ -482,11 +514,12 @@ fn is_digit_at(s : StringView, pos : Int) -> Bool {
 /// - `value` : The numeric value of the digits read (not yet scaled).
 /// - `digits_read` : The number of significant digits consumed (up to `max_digits`).
 /// - `new_pos` : The position after all digits (including discarded excess).
+
 ///|
 fn parse_frac_digits(
   s : StringView,
   start : Int,
-  max_digits : Int
+  max_digits : Int,
 ) -> (Int, Int, Int) {
   let mut pos = start
   let mut value = 0
@@ -507,12 +540,7 @@ fn parse_frac_digits(
   // Skip excess digits beyond max_digits
   while pos < s.length() {
     match s.get_char(pos) {
-      Some(c) =>
-        if c.is_ascii_digit() {
-          pos += 1
-        } else {
-          break
-        }
+      Some(c) => if c.is_ascii_digit() { pos += 1 } else { break }
       None => break
     }
   }
@@ -520,6 +548,7 @@ fn parse_frac_digits(
 }
 
 /// Skips an optional date separator (`-` or `/`) at position `pos`.
+
 ///|
 fn skip_date_sep(s : StringView, pos : Int) -> Int {
   match s.get_char(pos) {
@@ -529,6 +558,7 @@ fn skip_date_sep(s : StringView, pos : Int) -> Int {
 }
 
 /// Skips an optional time separator (`:`) at position `pos`.
+
 ///|
 fn skip_time_sep(s : StringView, pos : Int) -> Int {
   match s.get_char(pos) {
@@ -542,6 +572,7 @@ fn skip_time_sep(s : StringView, pos : Int) -> Int {
 /// Uses Go-style mktime normalization: out-of-range values for seconds, minutes,
 /// hours, days, and months are carried over to the next higher unit.
 /// The timezone offset is subtracted to produce a UTC epoch value.
+
 ///|
 fn datetime_to_epoch(
   year : Int,
@@ -551,7 +582,7 @@ fn datetime_to_epoch(
   min : Int,
   sec : Int,
   ms : Int,
-  tz_offset~ : TzOffset = Utc
+  tz_offset? : TzOffset = Utc,
 ) -> Int64 {
   // Convert TzOffset to minute-based offset and normalize to UTC
   let offset_min = tz_offset_to_minutes(tz_offset)
@@ -590,14 +621,19 @@ fn datetime_to_epoch(
   }
   // Convert to epoch: compute total days from 1970-01-01 (= day 0)
   let days = days_from_epoch(y, mo, d)
-  (days.to_int64() * 86400L + h.to_int64() * 3600L + mi.to_int64() * 60L +
-  s.to_int64()) *
+  (
+    days.to_int64() * 86400L +
+    h.to_int64() * 3600L +
+    mi.to_int64() * 60L +
+    s.to_int64()
+  ) *
   1000L +
   ms.to_int64()
 }
 
 /// Computes the number of days from 1970-01-01 for a given civil date.
 /// Uses Howard Hinnant's algorithm.
+
 ///|
 fn days_from_epoch(year : Int, month : Int, day : Int) -> Int {
   let y = if month <= 2 { year - 1 } else { year }
@@ -611,6 +647,7 @@ fn days_from_epoch(year : Int, month : Int, day : Int) -> Int {
 
 /// Converts days since 1970-01-01 back to a civil date `(year, month, day)`.
 /// Uses Howard Hinnant's algorithm.
+
 ///|
 fn epoch_days_to_civil(total_days : Int) -> (Int, Int, Int) {
   let z = total_days + 719468
@@ -627,6 +664,7 @@ fn epoch_days_to_civil(total_days : Int) -> (Int, Int, Int) {
 }
 
 /// Returns the number of days in the given month, accounting for leap years.
+
 ///|
 fn days_in_month(year : Int, month : Int) -> Int {
   match month {
@@ -647,6 +685,7 @@ fn days_in_month(year : Int, month : Int) -> Int {
 }
 
 /// Returns whether the given year is a leap year.
+
 ///|
 fn is_leap_year(year : Int) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
@@ -664,10 +703,11 @@ fn is_leap_year(year : Int) -> Bool {
 /// Returns a formatted string like `"2025-03-15T00:56:14Z"` or
 /// `"2025-03-15T09:56:14+09:00"`. Milliseconds are included only when non-zero
 /// (e.g. `"2025-03-15T00:56:14.123Z"`).
+
 ///|
 pub fn epoch_to_iso8601(
   epoch_ms : Int64,
-  tz_offset~ : TzOffset = Utc
+  tz_offset? : TzOffset = Utc,
 ) -> String {
   // Resolve Local before retaining for TZ suffix formatting
   let resolved_tz = match tz_offset {
@@ -693,7 +733,7 @@ pub fn epoch_to_iso8601(
     total_days -= 1
   }
   let hour = remaining / 3600
-  let min = (remaining % 3600) / 60
+  let min = remaining % 3600 / 60
   let sec = remaining % 60
   // Compute year/month/day from total_days (Howard Hinnant's algorithm)
   let (year, month, day) = epoch_days_to_civil(total_days)
@@ -718,7 +758,7 @@ pub fn epoch_to_iso8601(
   // TzOffset suffix
   match resolved_tz {
     Utc => buf.write_char('Z')
-    Hour(h) => {
+    Hour(h) =>
       if h >= 0 {
         buf.write_char('+')
         buf.write_string(pad2(h))
@@ -728,7 +768,6 @@ pub fn epoch_to_iso8601(
         buf.write_string(pad2(-h))
         buf.write_string(":00")
       }
-    }
     Min(m) => {
       let abs_m = if m >= 0 { m } else { -m }
       if m >= 0 {
@@ -746,6 +785,7 @@ pub fn epoch_to_iso8601(
 }
 
 /// Zero-pads an integer to 2 digits.
+
 ///|
 fn pad2(n : Int) -> String {
   if n < 10 {
@@ -756,6 +796,7 @@ fn pad2(n : Int) -> String {
 }
 
 /// Zero-pads an integer to 3 digits.
+
 ///|
 fn pad3(n : Int) -> String {
   if n < 10 {
@@ -768,6 +809,7 @@ fn pad3(n : Int) -> String {
 }
 
 /// Zero-pads an integer to 4 digits. Handles negative values for BCE years.
+
 ///|
 fn pad4(n : Int) -> String {
   if n < 0 {
@@ -784,6 +826,7 @@ fn pad4(n : Int) -> String {
 }
 
 /// Floor division that rounds toward negative infinity (Python-style).
+
 ///|
 fn floor_div(a : Int, b : Int) -> Int {
   if (a >= 0) == (b > 0) {
@@ -794,6 +837,7 @@ fn floor_div(a : Int, b : Int) -> Int {
 }
 
 /// Floor modulo that always returns a non-negative result (Python-style).
+
 ///|
 fn floor_mod(a : Int, b : Int) -> Int {
   a - floor_div(a, b) * b

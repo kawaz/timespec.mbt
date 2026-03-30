@@ -35,14 +35,15 @@
 /// explicit reset keywords (`none`, `null`, `nil`).
 ///
 /// Raises `ParseError` on malformed input.
+
 ///|
 pub fn parse_timespec(
   input : String,
-  epoch~ : EpochTime = EpochTime(0L),
-  default_sign~ : Sign = Plus,
-  default_tz_offset~ : TzOffset = Local,
-  now~ : () -> UInt64 = @env.now,
-  parse_datetime~ : (String) -> Int64? = default_parse_datetime
+  epoch? : EpochTime = EpochTime(0L),
+  default_sign? : Sign = Plus,
+  default_tz_offset? : TzOffset = Local,
+  now? : () -> UInt64 = @env.now,
+  parse_datetime? : (String) -> Int64? = default_parse_datetime,
 ) -> TimeSpec? raise ParseError {
   let s = input.trim()
   if s.length() == 0 {
@@ -54,19 +55,26 @@ pub fn parse_timespec(
     return None
   }
   // Check for "now" keyword
-  let is_now = lower == "now" || lower == "@now" ||
-    (lower.length() > 1 && {
-      // Handle patterns like "@@now", "@@@now", etc.
-      let mut all_at = true
-      let mut i = 0
-      while i < lower.length() - 3 {
-        match lower.get_char(i) {
-          Some('@') => i += 1
-          _ => { all_at = false; break }
+  let is_now = lower == "now" ||
+    lower == "@now" ||
+    (
+      lower.length() > 1 &&
+      ({
+        // Handle patterns like "@@now", "@@@now", etc.
+        let mut all_at = true
+        let mut i = 0
+        while i < lower.length() - 3 {
+          match lower.get_char(i) {
+            Some('@') => i += 1
+            _ => {
+              all_at = false
+              break
+            }
+          }
         }
-      }
-      all_at && lower[i:] == "now"
-    })
+        all_at && lower[i:] == "now"
+      })
+    )
   if is_now {
     let now_ms = now().reinterpret_as_int64()
     let epoch_time = EpochTime(now_ms - epoch.0)
@@ -166,10 +174,14 @@ pub fn parse_timespec(
           match seg_sign_char {
             Some('+') => {
               // Explicit +: flush current group and start a new one
-              if not(in_first_group) || has_duration {
+              if !(in_first_group) || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
-                  checked_mul(current_group_sign, current_group_ms, msg="timespec overflow"),
+                  checked_mul(
+                    current_group_sign,
+                    current_group_ms,
+                    msg="timespec overflow",
+                  ),
                   msg="timespec overflow",
                 )
               }
@@ -179,10 +191,14 @@ pub fn parse_timespec(
             }
             Some('-') => {
               // Explicit -: flush current group and start a new one
-              if not(in_first_group) || has_duration {
+              if !(in_first_group) || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
-                  checked_mul(current_group_sign, current_group_ms, msg="timespec overflow"),
+                  checked_mul(
+                    current_group_sign,
+                    current_group_ms,
+                    msg="timespec overflow",
+                  ),
                   msg="timespec overflow",
                 )
               }
@@ -190,12 +206,13 @@ pub fn parse_timespec(
               current_group_sign = -1L
               in_first_group = false
             }
-            _ => {
+            _ =>
               // No sign: accumulate into the current group
               current_group_ms = checked_add(
-                current_group_ms, effective_ms, msg="timespec overflow",
+                current_group_ms,
+                effective_ms,
+                msg="timespec overflow",
               )
-            }
           }
           scan_pos = dur_end
           continue
@@ -240,7 +257,10 @@ pub fn parse_timespec(
   // ===== Phase 2: @ marker detection (has_at already set during scan) =====
   // ===== Phase 3: Time-of-day pattern detection =====
   let remaining_raw = non_duration_buf.to_string()
-  let remaining_no_at = remaining_raw.replace(old="@", new="").trim().to_string()
+  let remaining_no_at = remaining_raw
+    .replace(old="@", new="")
+    .trim()
+    .to_string()
   let mut time_of_day_ms : Int64? = None
   let mut tz_offset_timepart : TzOffset? = None
   let mut datetime_str : String = remaining_no_at
@@ -249,7 +269,8 @@ pub fn parse_timespec(
     datetime_str = dt_part
     if tod_part.length() > 0 {
       let (tod_epoch_ms, tod_tz) = parse_iso8601_with_tz(
-        tod_part, default_tz_offset~,
+        tod_part,
+        default_tz_offset~,
       )
       time_of_day_ms = Some(tod_epoch_ms)
       tz_offset_timepart = tod_tz
@@ -260,7 +281,7 @@ pub fn parse_timespec(
   // Restore leading sign consumed in Phase 1
   let mut has_raw_epoch = false
   let mut raw_epoch_ms = 0L
-  let raw_candidate = if datetime_str.length() > 0 && not(has_duration) {
+  let raw_candidate = if datetime_str.length() > 0 && !(has_duration) {
     match leading_sign_char {
       Some(c) => c.to_string() + datetime_str
       None => datetime_str
@@ -293,15 +314,26 @@ pub fn parse_timespec(
   }
   // ===== Phase 5: Build EpochTime =====
   // `@` alone with no duration/datetime/time-of-day → Absolute(now)
-  if has_at && not(has_duration) && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None {
+  if has_at &&
+    !(has_duration) &&
+    !(has_datetime) &&
+    !(has_raw_epoch) &&
+    time_of_day_ms is None {
     let now_ms = now().reinterpret_as_int64()
     return Some(Absolute(EpochTime(now_ms - epoch.0), Duration(0L)))
   }
-  if not(has_duration) && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None && not(has_at) {
+  if !(has_duration) &&
+    !(has_datetime) &&
+    !(has_raw_epoch) &&
+    time_of_day_ms is None &&
+    !(has_at) {
     raise ParseError("no duration or datetime found in: " + input)
   }
   // Reject mode check: duration only with no datetime/time-of-day/raw epoch
-  if needs_sign && not(has_datetime) && not(has_raw_epoch) && time_of_day_ms is None {
+  if needs_sign &&
+    !(has_datetime) &&
+    !(has_raw_epoch) &&
+    time_of_day_ms is None {
     raise ParseError("missing sign in timespec: " + input)
   }
   // Determine the base epoch_ms
@@ -326,7 +358,7 @@ pub fn parse_timespec(
         None => default_tz_offset
       }
       if has_datetime {
-        if not(effective_tod_tz.equal_offset(effective_dt_tz)) {
+        if !(effective_tod_tz.equal_offset(effective_dt_tz)) {
           raise ParseError("ambiguous timezone offset")
         }
       }
@@ -342,7 +374,9 @@ pub fn parse_timespec(
   }
   // Add duration
   let final_epoch_ms = checked_add(
-    base_epoch_ms - epoch.0, duration.0, msg="timespec overflow",
+    base_epoch_ms - epoch.0,
+    duration.0,
+    msg="timespec overflow",
   )
   // ===== Phase 6: Build TimeSpec =====
   let epoch_time = EpochTime(final_epoch_ms)
@@ -358,10 +392,11 @@ pub fn parse_timespec(
 /// Returns `Some((ms_value, is_ago, end_pos))` if a valid duration segment is found,
 /// or `None` if the number is not followed by a duration unit.
 /// The returned `ms_value` is always positive; `is_ago` indicates the `ago` modifier.
+
 ///|
 fn probe_duration_segment(
   s : StringView,
-  pos : Int
+  pos : Int,
 ) -> (Int64, Bool, Int)? raise ParseError {
   // Read the digit part
   let mut p = pos
@@ -381,11 +416,7 @@ fn probe_duration_segment(
   }
   let after_num = skip_spaces(s, p)
   // Check if a unit character follows
-  let unit_result = try {
-    parse_unit(s, after_num)
-  } catch {
-    _ => (0L, after_num)
-  }
+  let unit_result = parse_unit(s, after_num) catch { _ => (0L, after_num) }
   let (ms_mul, unit_end) = unit_result
   if unit_end == after_num {
     return None // No unit found -> not a duration
@@ -412,6 +443,7 @@ fn probe_duration_segment(
 ///
 /// Stops at: whitespace, `@`, or a position where a `[+-]?digit+unit` pattern
 /// could start (potential duration segment boundary).
+
 ///|
 fn scan_non_duration(s : StringView, start : Int) -> Int {
   let mut pos = start
@@ -422,7 +454,7 @@ fn scan_non_duration(s : StringView, start : Int) -> Int {
       Some('+') | Some('-') => {
         let after_sign = pos + 1
         if is_digit_at(s, after_sign) {
-          let probe = try { probe_duration_segment(s, after_sign) } catch { _ => None }
+          let probe = probe_duration_segment(s, after_sign) catch { _ => None }
           match probe {
             Some(_) => break
             None => pos += 1
@@ -433,7 +465,7 @@ fn scan_non_duration(s : StringView, start : Int) -> Int {
       }
       Some(c) =>
         if c.is_ascii_digit() {
-          let probe = try { probe_duration_segment(s, pos) } catch { _ => None }
+          let probe = probe_duration_segment(s, pos) catch { _ => None }
           match probe {
             Some(_) => break
             None => pos += 1
@@ -452,6 +484,7 @@ fn scan_non_duration(s : StringView, start : Int) -> Int {
 /// If the string contains a 4-digit year pattern (YYYY followed by `-` or `/`),
 /// it's treated as datetime. Otherwise, if it looks like a time pattern (contains `:`),
 /// it's treated as time-of-day.
+
 ///|
 fn split_datetime_and_timeofday(s : String) -> (String, String) {
   let sv : StringView = s
@@ -489,16 +522,15 @@ fn split_datetime_and_timeofday(s : String) -> (String, String) {
       ""
     }
     (dt_part, tod)
+  } else if s.contains(":") {
+    ("", s)
   } else {
-    if s.contains(":") {
-      ("", s)
-    } else {
-      (s, "")
-    }
+    (s, "")
   }
 }
 
 /// Checks whether four consecutive ASCII digits exist starting at `pos` in a StringView.
+
 ///|
 fn is_four_digits_at_sv(s : StringView, pos : Int) -> Bool {
   if pos + 4 > s.length() {
@@ -506,7 +538,7 @@ fn is_four_digits_at_sv(s : StringView, pos : Int) -> Bool {
   }
   for i in 0..<4 {
     match s.get_char(pos + i) {
-      Some(c) => if not(c.is_ascii_digit()) { return false }
+      Some(c) => if !(c.is_ascii_digit()) { return false }
       None => return false
     }
   }
@@ -515,6 +547,7 @@ fn is_four_digits_at_sv(s : StringView, pos : Int) -> Bool {
 
 /// Finds the end of a datetime pattern starting at `start`.
 /// Consumes digits, separators, T, colon, dot, Z, and timezone offset.
+
 ///|
 fn find_datetime_end_sv(s : StringView, start : Int) -> Int {
   let mut pos = start
@@ -537,7 +570,7 @@ fn find_datetime_end_sv(s : StringView, start : Int) -> Int {
           }
           // space: may act as T separator in datetime. End if next char is not a digit
           if c == ' ' {
-            if not(is_digit_at(s, pos + 1)) {
+            if !(is_digit_at(s, pos + 1)) {
               break
             }
           }
@@ -560,18 +593,14 @@ fn find_datetime_end_sv(s : StringView, start : Int) -> Int {
 
 /// Probes whether a +/- at sign_pos is a timezone offset.
 /// Returns end position if TZ offset, or sign_pos if duration sign.
+
 ///|
 fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
   let mut pos = sign_pos + 1
   let digit_start = pos
   while pos < s.length() {
     match s.get_char(pos) {
-      Some(c) =>
-        if c.is_ascii_digit() {
-          pos += 1
-        } else {
-          break
-        }
+      Some(c) => if c.is_ascii_digit() { pos += 1 } else { break }
       None => break
     }
   }
@@ -584,10 +613,7 @@ fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
     Some('m') =>
       match s.get_char(pos + 1) {
         Some('s') => return sign_pos
-        Some(c) =>
-          if not(c.is_ascii_digit()) {
-            return sign_pos
-          }
+        Some(c) => if !(c.is_ascii_digit()) { return sign_pos }
         None => return sign_pos
       }
     Some('u') | Some('n') | Some('\u03BC') => return sign_pos
@@ -598,12 +624,7 @@ fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
       pos += 1
       while pos < s.length() {
         match s.get_char(pos) {
-          Some(c) =>
-            if c.is_ascii_digit() {
-              pos += 1
-            } else {
-              break
-            }
+          Some(c) => if c.is_ascii_digit() { pos += 1 } else { break }
           None => break
         }
       }
@@ -617,12 +638,14 @@ fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
 ///
 /// `Local` is resolved to the system timezone before comparison.
 /// For example, `Hour(0)` and `Utc` are considered equal since both resolve to 0 minutes.
+
 ///|
 pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool {
   tz_offset_to_minutes(self) == tz_offset_to_minutes(other)
 }
 
 /// Floor modulo for Int64 that always returns a non-negative result.
+
 ///|
 fn floor_mod_i64(a : Int64, b : Int64) -> Int64 {
   let r = a % b
@@ -634,6 +657,7 @@ fn floor_mod_i64(a : Int64, b : Int64) -> Int64 {
 }
 
 /// Checks if a string is [+-]?[0-9]+ (optional sign followed by digits only).
+
 ///|
 fn is_signed_digits(s : String) -> Bool {
   let sv : StringView = s
@@ -651,7 +675,7 @@ fn is_signed_digits(s : String) -> Bool {
   }
   while i < sv.length() {
     match sv.get_char(i) {
-      Some(c) => if not(c.is_ascii_digit()) { return false }
+      Some(c) => if !(c.is_ascii_digit()) { return false }
       None => return false
     }
     i += 1
@@ -660,6 +684,7 @@ fn is_signed_digits(s : String) -> Bool {
 }
 
 /// Parses a signed digit string as raw epoch milliseconds.
+
 ///|
 fn parse_raw_epoch(s : String) -> Int64 raise ParseError {
   let sv : StringView = s
@@ -689,5 +714,9 @@ fn parse_raw_epoch(s : String) -> Int64 raise ParseError {
       None => break
     }
   }
-  if neg { -value } else { value }
+  if neg {
+    -value
+  } else {
+    value
+  }
 }

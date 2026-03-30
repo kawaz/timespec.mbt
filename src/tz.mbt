@@ -6,6 +6,7 @@
 /// - **WASM**: returns `Utc` (WASI has no timezone API).
 ///
 /// The result is normalized to `Utc`, `Hour(n)`, or `Min(n)`.
+
 ///|
 pub fn local_tz_offset() -> TzOffset {
   normalize_tz_offset(local_tz_offset_minutes_ffi())
@@ -16,6 +17,7 @@ pub fn local_tz_offset() -> TzOffset {
 /// - `0` → `Utc`
 /// - Divisible by 60 → `Hour(n)`
 /// - Otherwise → `Min(n)`
+
 ///|
 fn normalize_tz_offset(minutes : Int) -> TzOffset {
   if minutes == 0 {
@@ -30,6 +32,7 @@ fn normalize_tz_offset(minutes : Int) -> TzOffset {
 /// Converts a `TzOffset` to its equivalent in minutes.
 ///
 /// `Local` is resolved to the system timezone before conversion.
+
 ///|
 fn tz_offset_to_minutes(tz : TzOffset) -> Int {
   match tz {
@@ -56,6 +59,7 @@ fn tz_offset_to_minutes(tz : TzOffset) -> Int {
 /// Returns a normalized `TzOffset` (`Utc`, `Hour`, or `Min`).
 ///
 /// Raises `ParseError` for sub-minute precision or invalid formats.
+
 ///|
 pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
   let s = input.trim()
@@ -103,7 +107,9 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
     let ms = dur.0
     // TZ offset is in minutes. Error if not evenly divisible
     if ms % 60_000L != 0L {
-      raise ParseError("timezone offset must be in whole minutes, got: " + trimmed)
+      raise ParseError(
+        "timezone offset must be in whole minutes, got: " + trimmed,
+      )
     }
     (ms / 60_000L).to_int()
   } else {
@@ -121,6 +127,7 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
 
 /// Checks if the string contains a duration unit character (`h`, `m`, `s`)
 /// at or after position `start`, to distinguish duration format from numeric format.
+
 ///|
 fn contains_duration_unit(s : StringView, start : Int) -> Bool {
   let mut i = start
@@ -135,11 +142,12 @@ fn contains_duration_unit(s : StringView, start : Int) -> Bool {
 
 /// Parses a numeric timezone offset in `HH`, `HHMM`, or `HH:MM` format.
 /// Returns the total offset in minutes, with the sign applied.
+
 ///|
 fn parse_numeric_offset(
   s : StringView,
   start : Int,
-  sign : Int
+  sign : Int,
 ) -> Int raise ParseError {
   let mut pos = start
   // Read the first numeric part (TZ offset is at most 4 digits for HHMM)
@@ -188,7 +196,9 @@ fn parse_numeric_offset(
         raise ParseError("expected minutes after ':' in timezone offset")
       }
       if pos < s.length() {
-        raise ParseError("unexpected trailing characters in timezone offset: " + s.to_string())
+        raise ParseError(
+          "unexpected trailing characters in timezone offset: " + s.to_string(),
+        )
       }
       sign * (first_num * 60 + mm)
     }
@@ -196,13 +206,19 @@ fn parse_numeric_offset(
       if first_digits <= 2 {
         // 1-2 digits: hours only
         if pos < s.length() {
-          raise ParseError("unexpected trailing characters in timezone offset: " + s.to_string())
+          raise ParseError(
+            "unexpected trailing characters in timezone offset: " +
+            s.to_string(),
+          )
         }
         sign * first_num * 60
       } else if first_digits == 4 {
         // 4 digits: HHMM
         if pos < s.length() {
-          raise ParseError("unexpected trailing characters in timezone offset: " + s.to_string())
+          raise ParseError(
+            "unexpected trailing characters in timezone offset: " +
+            s.to_string(),
+          )
         }
         let hh = first_num / 100
         let mm = first_num % 100
