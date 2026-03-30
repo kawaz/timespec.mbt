@@ -6,7 +6,7 @@
 /// Accepted formats include `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`,
 /// `YYYY-MM-DDTHH:MM:SS.sssZ`, and `YYYY-MM-DDTHH:MM:SS+HH:MM`.
 /// The `/` separator is also accepted in place of `-`.
-/// Inputs without timezone information are interpreted as UTC.
+/// Inputs without timezone information are interpreted as Local (system timezone).
 ///
 /// Parameters:
 ///
@@ -714,9 +714,11 @@ pub fn epoch_to_iso8601(
     Local => local_tz_offset()
     _ => tz_offset
   }
-  // Add offset to epoch_ms according to TzOffset
+  // Add offset to epoch_ms according to TzOffset, with saturating arithmetic
+  // to prevent overflow for extreme epoch values near Int64 boundaries.
   let offset_min = tz_offset_to_minutes(resolved_tz)
-  let adjusted = epoch_ms + offset_min.to_int64() * 60L * 1000L
+  let offset_ms = offset_min.to_int64() * 60L * 1000L
+  let adjusted = saturating_add(epoch_ms, offset_ms)
   // Convert epoch_ms back to year/month/day/hour/min/sec
   let total_ms = adjusted
   let mut total_seconds = total_ms / 1000L
@@ -841,4 +843,21 @@ fn floor_div(a : Int, b : Int) -> Int {
 ///|
 fn floor_mod(a : Int, b : Int) -> Int {
   a - floor_div(a, b) * b
+}
+
+/// Saturating addition for Int64: clamps to Int64.max_value / Int64.min_value
+/// on overflow instead of wrapping.
+/// Uses pre-addition overflow detection to avoid undefined wrapping behavior.
+
+///|
+fn saturating_add(a : Int64, b : Int64) -> Int64 {
+  if b > 0L && a > @int64.MAX_VALUE - b {
+    // Would overflow positively
+    @int64.MAX_VALUE
+  } else if b < 0L && a < @int64.MIN_VALUE - b {
+    // Would overflow negatively
+    @int64.MIN_VALUE
+  } else {
+    a + b
+  }
 }

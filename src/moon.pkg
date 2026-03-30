@@ -1,6 +1,7 @@
 import {
   "moonbitlang/core/env",
   "moonbitlang/core/buffer",
+  "moonbitlang/core/int64",
 }
 
 options(

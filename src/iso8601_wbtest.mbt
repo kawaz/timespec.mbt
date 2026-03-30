@@ -115,6 +115,68 @@ test "detect_tz_suffix: date-only with no time never detects short TZ" {
 }
 
 ///|
+test "saturating_add: normal addition" {
+  inspect(saturating_add(1L, 2L), content="3")
+  inspect(saturating_add(-1L, -2L), content="-3")
+  inspect(saturating_add(100L, -50L), content="50")
+  inspect(saturating_add(0L, 0L), content="0")
+}
+
+///|
+test "saturating_add: positive overflow clamps to MAX_VALUE" {
+  // MAX_VALUE + 1 would overflow; should clamp
+  inspect(saturating_add(@int64.MAX_VALUE, 1L), content="9223372036854775807")
+  // MAX_VALUE + large positive should also clamp
+  inspect(
+    saturating_add(@int64.MAX_VALUE, 3600000L),
+    content="9223372036854775807",
+  )
+  // Near MAX_VALUE: (MAX_VALUE - 1000) + 3600000 overflows
+  inspect(
+    saturating_add(@int64.MAX_VALUE - 1000L, 3600000L),
+    content="9223372036854775807",
+  )
+}
+
+///|
+test "saturating_add: negative overflow clamps to MIN_VALUE" {
+  // MIN_VALUE - 1 would overflow; should clamp
+  inspect(
+    saturating_add(@int64.MIN_VALUE, -1L),
+    content="-9223372036854775808",
+  )
+  // MIN_VALUE + large negative should also clamp
+  inspect(
+    saturating_add(@int64.MIN_VALUE, -3600000L),
+    content="-9223372036854775808",
+  )
+}
+
+///|
+test "saturating_add: boundary no-overflow" {
+  // MAX_VALUE + 0 = MAX_VALUE (no overflow)
+  inspect(
+    saturating_add(@int64.MAX_VALUE, 0L),
+    content="9223372036854775807",
+  )
+  // MIN_VALUE + 0 = MIN_VALUE (no overflow)
+  inspect(
+    saturating_add(@int64.MIN_VALUE, 0L),
+    content="-9223372036854775808",
+  )
+  // MAX_VALUE - 1 = MAX_VALUE + (-1), no overflow
+  inspect(
+    saturating_add(@int64.MAX_VALUE, -1L),
+    content="9223372036854775806",
+  )
+  // MIN_VALUE + 1, no overflow
+  inspect(
+    saturating_add(@int64.MIN_VALUE, 1L),
+    content="-9223372036854775807",
+  )
+}
+
+///|
 test "detect_tz_suffix: not supported patterns return None" {
   // 文字列ベースの TZ 名は検出しない
   inspect(detect_tz_suffix("2024-01-01T12:00:00 JST"), content="None")

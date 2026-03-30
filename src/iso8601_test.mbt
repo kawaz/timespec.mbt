@@ -145,6 +145,42 @@ test "epoch_to_iso8601: epoch zero" {
 }
 
 ///|
+test "epoch_to_iso8601: TZ offset does not cause Int64 overflow" {
+  // Use a large-but-valid epoch (year ~5879610, within Int32 arithmetic range).
+  // 185480424979200000 ms ≈ 2146764178 days from epoch.
+  // With +01:00 offset (+3600000ms), total_days stays safe (2146764178).
+  let large_epoch = 185480424979200000L
+  let result_utc = @timespec.epoch_to_iso8601(large_epoch)
+  let result_tz = @timespec.epoch_to_iso8601(large_epoch, tz_offset=Hour(1))
+  // Both should produce valid far-future dates with positive years
+  inspect(result_utc.has_prefix("-"), content="false")
+  inspect(result_tz.has_prefix("-"), content="false")
+  // Now test values near Int64 boundaries where TZ addition would overflow.
+  // Int64.MAX_VALUE - 1000 + Hour(1) offset (+3600000ms) overflows Int64.
+  // Without saturating_add: wraps to a large negative, producing a sign-flipped year.
+  // With saturating_add: clamps to Int64.MAX_VALUE, avoiding the sign flip.
+  // (The output is still garbled by downstream Int32 truncation, but the overflow
+  // from TZ addition no longer makes it dramatically worse.)
+  let near_max = @int64.MAX_VALUE - 1000L
+  let near_max_utc = @timespec.epoch_to_iso8601(near_max)
+  let near_max_tz = @timespec.epoch_to_iso8601(near_max, tz_offset=Hour(1))
+  // Key invariant: TZ offset addition should not flip the year's sign.
+  // Both should have the same sign (both are garbled the same way).
+  inspect(
+    near_max_utc.has_prefix("-") == near_max_tz.has_prefix("-"),
+    content="true",
+  )
+  // Negative direction: Int64.MIN_VALUE + 1000 with Hour(-1) would underflow.
+  let near_min = @int64.MIN_VALUE + 1000L
+  let near_min_utc = @timespec.epoch_to_iso8601(near_min)
+  let near_min_tz = @timespec.epoch_to_iso8601(near_min, tz_offset=Hour(-1))
+  inspect(
+    near_min_utc.has_prefix("-") == near_min_tz.has_prefix("-"),
+    content="true",
+  )
+}
+
+///|
 test "epoch_to_iso8601: negative epoch (pre-1970)" {
   // 1969-12-31T23:59:59Z = -1000ms
   inspect(

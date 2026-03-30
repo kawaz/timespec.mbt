@@ -7,7 +7,18 @@
 fn format_duration(d : Duration) -> String {
   let ms = d.0
   let sign = if ms < 0L { "-" } else { "+" }
-  let mut remain = if ms < 0L { -ms } else { ms }
+  // Guard against Int64.min_value: -Int64.min_value overflows back to itself.
+  // Handle by using Int64.max_value and carrying the extra 1ms into the final
+  // milliseconds component. This works because max_value % 1000 == 807,
+  // so adding 1 does not cause a carry into the seconds component.
+  let extra_ms = if ms == @int64.MIN_VALUE { 1L } else { 0L }
+  let mut remain = if ms == @int64.MIN_VALUE {
+    @int64.MAX_VALUE
+  } else if ms < 0L {
+    -ms
+  } else {
+    ms
+  }
   let buf = StringBuilder::new()
   buf.write_string(sign)
   if remain == 0L {
@@ -49,7 +60,8 @@ fn format_duration(d : Duration) -> String {
     buf.write_string(seconds.to_string())
     buf.write_char('s')
   }
-  // milliseconds
+  // milliseconds (add extra_ms for Int64.min_value correction)
+  remain = remain + extra_ms
   if remain > 0L {
     buf.write_string(remain.to_string())
     buf.write_string("ms")
