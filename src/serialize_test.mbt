@@ -4,10 +4,11 @@ test "to_cli_string: Absolute" {
     @timespec.EpochTime(1704067200000L),
     @timespec.Duration(0L),
   ) // 2024-01-01T00:00:00Z
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|2024-01-01T00:00:00Z
+      #|"2024-01-01T00:00:00Z"
+
     ),
   )
 }
@@ -18,10 +19,11 @@ test "to_cli_string: Relative positive" {
     @timespec.EpochTime(1_300_000L),
     @timespec.Duration(300_000L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+5m
+      #|"+5m"
+
     ),
   )
 }
@@ -32,10 +34,11 @@ test "to_cli_string: Relative negative" {
     @timespec.EpochTime(700_000L),
     @timespec.Duration(-300_000L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|-5m
+      #|"-5m"
+
     ),
   )
 }
@@ -46,10 +49,11 @@ test "to_cli_string: Relative zero" {
     @timespec.EpochTime(1_000_000L),
     @timespec.Duration(0L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+0s
+      #|"+0s"
+
     ),
   )
 }
@@ -61,10 +65,11 @@ test "to_cli_string: Relative large" {
     @timespec.EpochTime(0L),
     @timespec.Duration(5_400_000L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+1h30m
+      #|"+1h30m"
+
     ),
   )
 }
@@ -76,10 +81,11 @@ test "format_duration: weeks and days" {
     @timespec.EpochTime(0L),
     @timespec.Duration(777_600_000L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+1w2d
+      #|"+1w2d"
+
     ),
   )
 }
@@ -91,10 +97,11 @@ test "format_duration: all units" {
     @timespec.EpochTime(0L),
     @timespec.Duration(5_445_500L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+1h30m45s500ms
+      #|"+1h30m45s500ms"
+
     ),
   )
 }
@@ -105,10 +112,11 @@ test "format_duration: ms only" {
     @timespec.EpochTime(0L),
     @timespec.Duration(500L),
   )
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|+500ms
+      #|"+500ms"
+
     ),
   )
 }
@@ -119,10 +127,11 @@ test "to_cli_string: Absolute with milliseconds" {
     @timespec.EpochTime(1704067200500L),
     @timespec.Duration(0L),
   ) // .500
-  inspect(
+  debug_inspect(
     ts.to_cli_string(),
     content=(
-      #|2024-01-01T00:00:00.500Z
+      #|"2024-01-01T00:00:00.500Z"
+
     ),
   )
 }
@@ -139,7 +148,9 @@ test "format_duration: Int64.min_value does not overflow" {
   )
   let result = ts.to_cli_string()
   // Should start with "-" (negative duration)
-  inspect(result[:1].to_string(), content="-")
+  debug_inspect(result[:1].to_string(), content=(
+    #|"-"
+  ))
   // Should NOT start with "+-" or be "+0s" (which would indicate overflow)
   assert_true(result != "+0s")
   assert_true(result != "+-0s")
@@ -147,9 +158,11 @@ test "format_duration: Int64.min_value does not overflow" {
   // 9223372036854775808 ms = 15250284452w3d7h12m55s808ms
   // But since remain is set to Int64.max_value (off by 1ms), we add that 1ms back.
   // Let's just verify it parses to a reasonable negative duration string.
-  inspect(
+  debug_inspect(
     result,
-    content="-15250284452w3d7h12m55s808ms",
+    content=(
+      #|"-15250284452w3d7h12m55s808ms"
+    ),
   )
 }
 
@@ -161,10 +174,11 @@ test "to_cli_string: with custom epoch" {
     @timespec.Duration(0L),
   )
   let snowflake_epoch = @timespec.EpochTime(1288834974657L)
-  inspect(
+  debug_inspect(
     ts.to_cli_string(epoch=snowflake_epoch),
     content=(
-      #|2010-11-04T01:42:54.657Z
+      #|"2010-11-04T01:42:54.657Z"
+
     ),
   )
 }

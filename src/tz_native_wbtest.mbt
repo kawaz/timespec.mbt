@@ -26,13 +26,13 @@ fn set_tz(tz : String) -> Unit {
 ///|
 test "native: TZ=Asia/Tokyo → Hour(9)" {
   set_tz("Asia/Tokyo")
-  inspect(local_tz_offset(), content="Hour(9)")
+  debug_inspect(local_tz_offset(), content="Hour(9)")
 }
 
 ///|
 test "native: TZ=UTC → Utc" {
   set_tz("UTC")
-  inspect(local_tz_offset(), content="Utc")
+  debug_inspect(local_tz_offset(), content="Utc")
 }
 
 ///|
@@ -49,7 +49,7 @@ test "native: TZ=America/New_York → Hour(-5) or Hour(-4)" {
 ///|
 test "native: TZ=Asia/Kolkata → Min(330)" {
   set_tz("Asia/Kolkata")
-  inspect(local_tz_offset(), content="Min(330)")
+  debug_inspect(local_tz_offset(), content="Min(330)")
 }
 
 ///|
@@ -66,9 +66,9 @@ test "native: TZ=Pacific/Chatham → Min(765) or Min(825)" {
 ///|
 test "native: TZ 変更が即座に反映される" {
   set_tz("UTC")
-  inspect(local_tz_offset(), content="Utc")
+  debug_inspect(local_tz_offset(), content="Utc")
   set_tz("Asia/Tokyo")
-  inspect(local_tz_offset(), content="Hour(9)")
+  debug_inspect(local_tz_offset(), content="Hour(9)")
   set_tz("UTC")
-  inspect(local_tz_offset(), content="Utc")
+  debug_inspect(local_tz_offset(), content="Utc")
 }

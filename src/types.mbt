@@ -7,7 +7,7 @@
 /// as well as scalar multiplication via `Duration::scale`.
 
 ///|
-pub(all) struct Duration(Int64) derive(Eq, Show, Compare)
+pub(all) struct Duration(Int64) derive(Eq, Debug, Compare)
 
 /// Returns the duration value in milliseconds.
 
@@ -23,7 +23,7 @@ pub fn Duration::to_ms(self : Duration) -> Int64 {
 /// but can be shifted via the `epoch` parameter in parse functions.
 
 ///|
-pub(all) struct EpochTime(Int64) derive(Eq, Show, Compare)
+pub(all) struct EpochTime(Int64) derive(Eq, Debug, Compare)
 
 /// Returns the epoch time value in milliseconds.
 
@@ -49,7 +49,7 @@ pub fn EpochTime::to_ms(self : EpochTime) -> Int64 {
 pub(all) enum TimeSpec {
   Absolute(EpochTime, Duration)
   Relative(EpochTime, Duration)
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// Returns the resolved epoch time.
 
@@ -96,7 +96,7 @@ pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64 {
 pub(all) struct TimeRange {
   since : TimeSpec?
   until : TimeSpec?
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// Controls how unsigned (no explicit `+` or `-`) duration inputs are interpreted.
 ///
@@ -112,7 +112,7 @@ pub(all) enum Sign {
   Minus
   Plus
   Reject
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// A timezone offset from UTC.
 ///
@@ -127,7 +127,7 @@ pub(all) enum TzOffset {
   Local
   Hour(Int)
   Min(Int)
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// Error type raised when parsing fails.
 ///
@@ -136,4 +136,4 @@ pub(all) enum TzOffset {
 ///|
 pub(all) suberror ParseError {
   ParseError(String)
-} derive(Eq, Show)
+} derive(Eq, Debug)

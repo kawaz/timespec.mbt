@@ -1,30 +1,30 @@
 ///|
 test "parse_tz_offset: empty and UTC/GMT variants" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset(""),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("Z"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("UTC"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("GMT"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("gmt"),
     content=(
       #|Utc
@@ -34,25 +34,25 @@ test "parse_tz_offset: empty and UTC/GMT variants" {
 
 ///|
 test "parse_tz_offset: hour only" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("9"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+9"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+09"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-5"),
     content=(
       #|Hour(-5)
@@ -62,25 +62,25 @@ test "parse_tz_offset: hour only" {
 
 ///|
 test "parse_tz_offset: HHMM and HH:MM" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+0900"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+09:00"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+0530"),
     content=(
       #|Min(330)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+05:30"),
     content=(
       #|Min(330)
@@ -90,25 +90,25 @@ test "parse_tz_offset: HHMM and HH:MM" {
 
 ///|
 test "parse_tz_offset: duration format" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("5h30m"),
     content=(
       #|Min(330)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+5h30m"),
     content=(
       #|Min(330)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-5h"),
     content=(
       #|Hour(-5)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("9h"),
     content=(
       #|Hour(9)
@@ -118,19 +118,19 @@ test "parse_tz_offset: duration format" {
 
 ///|
 test "parse_tz_offset: zero offset" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("0"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+0"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-00:00"),
     content=(
       #|Utc
@@ -140,13 +140,13 @@ test "parse_tz_offset: zero offset" {
 
 ///|
 test "parse_tz_offset: negative minutes" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-5:30"),
     content=(
       #|Min(-330)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-0530"),
     content=(
       #|Min(-330)
@@ -156,7 +156,7 @@ test "parse_tz_offset: negative minutes" {
 
 ///|
 test "parse_tz_offset: lowercase z" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("z"),
     content=(
       #|Utc
@@ -166,13 +166,13 @@ test "parse_tz_offset: lowercase z" {
 
 ///|
 test "parse_tz_offset: case-insensitive UTC" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("utc"),
     content=(
       #|Utc
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("Utc"),
     content=(
       #|Utc
@@ -182,31 +182,31 @@ test "parse_tz_offset: case-insensitive UTC" {
 
 ///|
 test "parse_tz_offset: GMT+offset" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("GMT+9"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("GMT+0900"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("GMT+09:00"),
     content=(
       #|Hour(9)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("GMT-5"),
     content=(
       #|Hour(-5)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("UTC+5:30"),
     content=(
       #|Min(330)
@@ -228,19 +228,19 @@ test "parse_tz_offset: seconds not valid as tz" {
 
 ///|
 test "parse_tz_offset: local" {
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("local"),
     content=(
       #|Local
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("LOCAL"),
     content=(
       #|Local
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("Local"),
     content=(
       #|Local
@@ -263,25 +263,25 @@ test "local_tz_offset returns valid TzOffset" {
 ///|
 test "parse_tz_offset: boundary values" {
   // 有効な範囲の端
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+14"),
     content=(
       #|Hour(14)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-12"),
     content=(
       #|Hour(-12)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("+24"),
     content=(
       #|Hour(24)
     ),
   )
-  inspect(
+  debug_inspect(
     @timespec.parse_tz_offset("-24"),
     content=(
       #|Hour(-24)

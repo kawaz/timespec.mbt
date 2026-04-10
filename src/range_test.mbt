@@ -10,13 +10,13 @@ test "parse_range: since single value" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|None
@@ -31,13 +31,13 @@ test "parse_range: until single value" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|None
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
@@ -54,13 +54,13 @@ test "parse_range: both relative independent" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(820000), Duration(-180000)))
@@ -78,13 +78,13 @@ test "parse_range: mixed - until absolute anchor" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(520000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Absolute(EpochTime(820000), Duration(-180000)))
@@ -101,13 +101,13 @@ test "parse_range: both absolute independent" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Absolute(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Absolute(EpochTime(820000), Duration(-180000)))
@@ -124,13 +124,13 @@ test "parse_range: @ with explicit sign" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Absolute(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Absolute(EpochTime(1180000), Duration(180000)))
@@ -148,13 +148,13 @@ test "parse_range: swap" {
     default_sign=Minus,
     swap=true,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(820000), Duration(-180000)))
@@ -170,13 +170,13 @@ test "parse_range: empty since" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|None
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(820000), Duration(-180000)))
@@ -192,13 +192,13 @@ test "parse_range: explicit positive sign on until" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(1180000), Duration(180000)))
@@ -214,13 +214,13 @@ test "parse_range: explicit negative sign on until" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(820000), Duration(-180000)))
@@ -237,13 +237,13 @@ test "parse_range: mixed - since absolute anchor" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Absolute(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(520000), Duration(-180000)))
@@ -260,13 +260,13 @@ test "parse_range: mixed - until absolute, since relative" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Relative(EpochTime(520000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Absolute(EpochTime(820000), Duration(-180000)))
@@ -282,13 +282,13 @@ test "parse_range: mixed - since absolute, until relative (until context equival
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|Some(Absolute(EpochTime(700000), Duration(-300000)))
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|Some(Relative(EpochTime(520000), Duration(-180000)))
@@ -299,13 +299,13 @@ test "parse_range: mixed - since absolute, until relative (until context equival
 ///|
 test "parse_range: both empty returns empty range" {
   let r = @timespec.parse_range(now=range_test_now, default_sign=Minus)
-  inspect(
+  debug_inspect(
     r.since,
     content=(
       #|None
     ),
   )
-  inspect(
+  debug_inspect(
     r.until,
     content=(
       #|None
@@ -398,10 +398,11 @@ test "parse_range: input and since/until together is error" {
 ///|
 test "parse_range: no arguments" {
   let r = @timespec.parse_range()
-  inspect(
+  debug_inspect(
     r,
     content=(
-      #|{since: None, until: None}
+      #|{ since: None, until: None }
+
     ),
   )
 }

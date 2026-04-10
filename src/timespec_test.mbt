@@ -5,7 +5,7 @@ fn test_now() -> UInt64 {
 
 ///|
 test "parse_timespec: duration only (Relative)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("5m", now=test_now, default_sign=Minus),
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
@@ -15,7 +15,7 @@ test "parse_timespec: duration only (Relative)" {
 
 ///|
 test "parse_timespec: @ prefix (Absolute)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("@5m", now=test_now, default_sign=Minus),
     content=(
       #|Some(Absolute(EpochTime(700000), Duration(-300000)))
@@ -25,7 +25,7 @@ test "parse_timespec: @ prefix (Absolute)" {
 
 ///|
 test "parse_timespec: @ suffix (Absolute)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("-5h@", now=test_now, default_sign=Minus),
     content=(
       #|Some(Absolute(EpochTime(-17000000), Duration(-18000000)))
@@ -42,7 +42,7 @@ test "parse_timespec: @-5h equals -5h@" {
 
 ///|
 test "parse_timespec: datetime only (Absolute)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("2024-01-01T12:00:00Z", now=test_now),
     content=(
       #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
@@ -53,7 +53,7 @@ test "parse_timespec: datetime only (Absolute)" {
 ///|
 test "parse_timespec: datetime + duration" {
   // 2024-01-01T12:00:00Z + 5h30m
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("2024-01-01T12:00:00Z+5h30m", now=test_now),
     content=(
       #|Some(Absolute(EpochTime(1704130200000), Duration(19800000)))
@@ -65,7 +65,7 @@ test "parse_timespec: datetime + duration" {
 test "parse_timespec: duration + datetime" {
   // 30m before 2024-01-01T12:00:00Z (default_sign=Plus なので +30m)
   // duration 前の符号は default_sign に従う
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec(
       "30m2024-01-01T12:00:00Z",
       now=test_now,
@@ -79,7 +79,7 @@ test "parse_timespec: duration + datetime" {
 
 ///|
 test "parse_timespec: duration + datetime + duration" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec(
       "30m2024-01-01T12:00:00Z+5h30m",
       now=test_now,
@@ -93,7 +93,7 @@ test "parse_timespec: duration + datetime + duration" {
 
 ///|
 test "parse_timespec: positive duration (Relative)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("+5m", now=test_now),
     content=(
       #|Some(Relative(EpochTime(1300000), Duration(300000)))
@@ -103,7 +103,7 @@ test "parse_timespec: positive duration (Relative)" {
 
 ///|
 test "parse_timespec: negative duration (Relative)" {
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec("-5m", now=test_now),
     content=(
       #|Some(Relative(EpochTime(700000), Duration(-300000)))
@@ -126,7 +126,7 @@ test "parse_timespec: garbage after datetime" {
 ///|
 test "parse_timespec: Reject with datetime (no error)" {
   // datetime 入力は符号不要
-  inspect(
+  debug_inspect(
     @timespec.parse_timespec(
       "2024-01-01T12:00:00Z",
       now=test_now,
@@ -151,7 +151,7 @@ test "parse_timespec: custom epoch (Snowflake)" {
   let now_fn = fn() -> UInt64 { 1_700_000_000_000UL }
   let ts = @timespec.parse_timespec("0s", epoch=snowflake_epoch, now=now_fn)
   // epoch relative の now
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Relative(EpochTime(411165025343), Duration(0)))
@@ -183,7 +183,7 @@ test "parse_timespec: custom epoch with datetime" {
     epoch=snowflake_epoch,
     now=now_fn,
   )
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(415275425343), Duration(0)))
@@ -206,7 +206,7 @@ test "parse_timespec: time-of-day reset @00:00" {
   let now_fn = fn() -> UInt64 { 1_000_000_000UL } // some now
   let ts = @timespec.parse_timespec("@00:00", now=now_fn, default_tz_offset=Utc)
   // should be today's midnight UTC
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(950400000), Duration(0)))
@@ -218,7 +218,7 @@ test "parse_timespec: time-of-day reset @00:00" {
 test "parse_timespec: time-of-day @10:30" {
   let now_fn = fn() -> UInt64 { 1_000_000_000UL }
   let ts = @timespec.parse_timespec("@10:30", now=now_fn, default_tz_offset=Utc)
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(988200000), Duration(0)))
@@ -235,7 +235,7 @@ test "parse_timespec: time-of-day with duration @00:00+3h" {
     default_tz_offset=Utc,
     default_sign=Plus,
   )
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(961200000), Duration(10800000)))
@@ -248,7 +248,7 @@ test "parse_timespec: raw epoch ms (@DIGITS)" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   // @1704110400000 → EpochTime(1704110400000) = 2024-01-01T12:00:00Z
   let ts = @timespec.parse_timespec("@1704110400000", now=now_fn)
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(1704110400000), Duration(0)))
@@ -261,7 +261,7 @@ test "parse_timespec: raw epoch ms with duration" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   // @1704110400000+1h → EpochTime(1704110400000 + 3600000)
   let ts = @timespec.parse_timespec("@1704110400000+1h", now=now_fn)
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(1704114000000), Duration(3600000)))
@@ -274,7 +274,7 @@ test "parse_timespec: @2026 is raw epoch not year" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   let ts = @timespec.parse_timespec("@2026", now=now_fn)
   // 2026ms from epoch, NOT 2026-01-01
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(2026), Duration(0)))
@@ -287,7 +287,7 @@ test "parse_timespec: @-100 negative raw epoch" {
   let now_fn = fn() -> UInt64 { 1_000_000UL }
   let ts = @timespec.parse_timespec("@-100", now=now_fn)
   // 100ms before epoch
-  inspect(
+  debug_inspect(
     ts,
     content=(
       #|Some(Absolute(EpochTime(-100), Duration(0)))
@@ -309,68 +309,68 @@ test "TimeSpec accessors" {
     @timespec.EpochTime(700000L),
     @timespec.Duration(-300000L),
   )
-  inspect(ts.epoch(), content="EpochTime(700000)")
-  inspect(ts.duration(), content="Duration(-300000)")
+  debug_inspect(ts.epoch(), content="EpochTime(700000)")
+  debug_inspect(ts.duration(), content="Duration(-300000)")
   assert_true(ts.is_absolute())
-  inspect(ts.to_epoch_ms(), content="700000")
+  debug_inspect(ts.to_epoch_ms(), content="700000")
 }
 
 ///|
 test "Duration::to_ms" {
-  inspect(@timespec.Duration(5000L).to_ms(), content="5000")
+  debug_inspect(@timespec.Duration(5000L).to_ms(), content="5000")
 }
 
 ///|
 test "EpochTime::to_ms" {
-  inspect(@timespec.EpochTime(1000000L).to_ms(), content="1000000")
+  debug_inspect(@timespec.EpochTime(1000000L).to_ms(), content="1000000")
 }
 
 ///|
 test "parse_timespec: @ alone is Absolute(now)" {
   let ts = @timespec.parse_timespec("@", now=test_now)
-  inspect(ts, content="Some(Absolute(EpochTime(1000000), Duration(0)))")
+  debug_inspect(ts, content="Some(Absolute(EpochTime(1000000), Duration(0)))")
 }
 
 ///|
 test "parse_timespec: now keyword is Relative(now)" {
   let ts = @timespec.parse_timespec("now", now=test_now)
-  inspect(ts, content="Some(Relative(EpochTime(1000000), Duration(0)))")
+  debug_inspect(ts, content="Some(Relative(EpochTime(1000000), Duration(0)))")
 }
 
 ///|
 test "parse_timespec: @now is Absolute(now)" {
   let ts = @timespec.parse_timespec("@now", now=test_now)
-  inspect(ts, content="Some(Absolute(EpochTime(1000000), Duration(0)))")
+  debug_inspect(ts, content="Some(Absolute(EpochTime(1000000), Duration(0)))")
 }
 
 ///|
 test "parse_timespec: NOW case insensitive" {
   let ts = @timespec.parse_timespec("NOW", now=test_now)
-  inspect(ts, content="Some(Relative(EpochTime(1000000), Duration(0)))")
+  debug_inspect(ts, content="Some(Relative(EpochTime(1000000), Duration(0)))")
 }
 
 ///|
 test "parse_timespec: none returns None" {
   let ts = @timespec.parse_timespec("none", now=test_now)
-  inspect(ts, content="None")
+  debug_inspect(ts, content="None")
 }
 
 ///|
 test "parse_timespec: null returns None" {
   let ts = @timespec.parse_timespec("null", now=test_now)
-  inspect(ts, content="None")
+  debug_inspect(ts, content="None")
 }
 
 ///|
 test "parse_timespec: nil returns None" {
   let ts = @timespec.parse_timespec("nil", now=test_now)
-  inspect(ts, content="None")
+  debug_inspect(ts, content="None")
 }
 
 ///|
 test "parse_timespec: NONE case insensitive" {
   let ts = @timespec.parse_timespec("None", now=test_now)
-  inspect(ts, content="None")
+  debug_inspect(ts, content="None")
 }
 
 ///|
@@ -380,8 +380,8 @@ test "parse_range: none~5m" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(r.since, content="None")
-  inspect(
+  debug_inspect(r.since, content="None")
+  debug_inspect(
     r.until,
     content="Some(Relative(EpochTime(700000), Duration(-300000)))",
   )
@@ -394,9 +394,9 @@ test "parse_range: 5m~none" {
     now=range_test_now,
     default_sign=Minus,
   )
-  inspect(
+  debug_inspect(
     r.since,
     content="Some(Relative(EpochTime(700000), Duration(-300000)))",
   )
-  inspect(r.until, content="None")
+  debug_inspect(r.until, content="None")
 }
