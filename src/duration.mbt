@@ -57,6 +57,9 @@ pub impl Neg for Duration with neg(self) {
 /// * `n` : The multiplier.
 ///
 /// Returns a new `Duration` whose millisecond value is `self * n`.
+///
+/// Note: This function does not perform overflow checking. For extremely
+/// large values, the result may silently wrap around.
 
 ///|
 pub fn Duration::scale(self : Duration, n : Int64) -> Duration {
@@ -71,6 +74,11 @@ pub fn Duration::scale(self : Duration, n : Int64) -> Duration {
 /// * `d` : The duration to add (may be negative to subtract).
 ///
 /// Returns a new `EpochTime` offset by `d` milliseconds.
+///
+/// Note: This function does not perform overflow checking. For extremely
+/// large values, the result may silently wrap around. The parse functions
+/// (`parse_duration`, `parse_timespec`, etc.) use internal overflow-checked
+/// arithmetic and are safe.
 
 ///|
 pub fn EpochTime::add_duration(self : EpochTime, d : Duration) -> EpochTime {
