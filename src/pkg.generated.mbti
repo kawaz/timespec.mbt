@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "kawaz/timespec"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub let day : Duration
 
@@ -33,10 +37,10 @@ pub let week : Duration
 // Errors
 pub(all) suberror ParseError {
   ParseError(String)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 // Types and methods
-pub(all) struct Duration(Int64) derive(Compare, Eq, Show)
+pub(all) struct Duration(Int64) derive(Compare, Eq, @debug.Debug)
 #deprecated
 pub fn Duration::inner(Self) -> Int64
 pub fn Duration::scale(Self, Int64) -> Self
@@ -45,7 +49,7 @@ pub impl Add for Duration
 pub impl Neg for Duration
 pub impl Sub for Duration
 
-pub(all) struct EpochTime(Int64) derive(Compare, Eq, Show)
+pub(all) struct EpochTime(Int64) derive(Compare, Eq, @debug.Debug)
 pub fn EpochTime::add_duration(Self, Duration) -> Self
 #deprecated
 pub fn EpochTime::inner(Self) -> Int64
@@ -55,17 +59,17 @@ pub(all) enum Sign {
   Minus
   Plus
   Reject
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct TimeRange {
   since : TimeSpec?
   until : TimeSpec?
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum TimeSpec {
   Absolute(EpochTime, Duration)
   Relative(EpochTime, Duration)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn TimeSpec::duration(Self) -> Duration
 pub fn TimeSpec::epoch(Self) -> EpochTime
 pub fn TimeSpec::is_absolute(Self) -> Bool
@@ -77,7 +81,7 @@ pub(all) enum TzOffset {
   Local
   Hour(Int)
   Min(Int)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn TzOffset::equal_offset(Self, Self) -> Bool
 
 // Type aliases

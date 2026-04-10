@@ -61,7 +61,7 @@ fn parse_iso8601_with_tz(
   }
   let mut pos = 0
   // Check if it starts with a 4-digit year
-  let is_time_only = !(is_four_digits_at_sv(s, 0))
+  let is_time_only = !is_four_digits_at_sv(s, 0)
   let mut year = 1970
   let mut month = 1
   let mut day = 1
@@ -142,7 +142,7 @@ fn parse_iso8601_with_tz(
     Some('-') | Some('/') => true
     _ => false
   }
-  if !(has_date_sep) && !(is_digit_at(s, pos)) {
+  if !has_date_sep && !is_digit_at(s, pos) {
     raise ParseError("incomplete date (year-only): " + input)
   }
   pos = skip_date_sep(s, pos)
@@ -150,12 +150,10 @@ fn parse_iso8601_with_tz(
   month = m
   pos = p2
   // Day (required)
-  if !(
-      match s.get_char(pos) {
-        Some('-') | Some('/') => true
-        _ => is_digit_at(s, pos) && !(has_date_sep)
-      },
-    ) {
+  if !(match s.get_char(pos) {
+      Some('-') | Some('/') => true
+      _ => is_digit_at(s, pos) && !has_date_sep
+    }) {
     raise ParseError("incomplete date (year-month only): " + input)
   }
   pos = skip_date_sep(s, pos)
@@ -189,7 +187,7 @@ fn parse_iso8601_with_tz(
           if pos < s.length() &&
             (match s.get_char(pos) {
               Some(':') => true
-              _ => is_digit_at(s, pos) && !(has_time_sep)
+              _ => is_digit_at(s, pos) && !has_time_sep
             }) {
             pos = skip_time_sep(s, pos)
             let (sc, p6) = parse_int_digits(s, pos, 1, 2)
@@ -320,7 +318,7 @@ fn detect_tz_suffix(input : String) -> TzOffset? {
           // Check all chars after sign are digits
           let mut all_digits = true
           for i in (p + 1)..<len {
-            if !(is_digit_at(s, i)) {
+            if !is_digit_at(s, i) {
               all_digits = false
               break
             }

@@ -26,7 +26,10 @@ test "detect_tz_suffix: -HH:MM" {
 
 ///|
 test "detect_tz_suffix: +HHMM" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00+0900"), content="Some(Hour(9))")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00+0900"),
+    content="Some(Hour(9))",
+  )
 }
 
 ///|
@@ -39,7 +42,10 @@ test "detect_tz_suffix: -HHMM" {
 
 ///|
 test "detect_tz_suffix: +00:00 normalizes to Utc" {
-  debug_inspect(detect_tz_suffix("2024-01-01T00:00:00+00:00"), content="Some(Utc)")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T00:00:00+00:00"),
+    content="Some(Utc)",
+  )
 }
 
 ///|
@@ -64,7 +70,10 @@ test "detect_tz_suffix: empty string" {
 
 ///|
 test "detect_tz_suffix: with milliseconds and Z" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00.500Z"), content="Some(Utc)")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00.500Z"),
+    content="Some(Utc)",
+  )
 }
 
 ///|
@@ -77,22 +86,34 @@ test "detect_tz_suffix: with milliseconds and +HH:MM" {
 
 ///|
 test "detect_tz_suffix: +HH (short)" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00+09"), content="Some(Hour(9))")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00+09"),
+    content="Some(Hour(9))",
+  )
 }
 
 ///|
 test "detect_tz_suffix: -HH (short)" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00-05"), content="Some(Hour(-5))")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00-05"),
+    content="Some(Hour(-5))",
+  )
 }
 
 ///|
 test "detect_tz_suffix: +H (single digit)" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00+9"), content="Some(Hour(9))")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00+9"),
+    content="Some(Hour(9))",
+  )
 }
 
 ///|
 test "detect_tz_suffix: -H (single digit)" {
-  debug_inspect(detect_tz_suffix("2024-01-01T12:00:00-5"), content="Some(Hour(-5))")
+  debug_inspect(
+    detect_tz_suffix("2024-01-01T12:00:00-5"),
+    content="Some(Hour(-5))",
+  )
 }
 
 ///|
@@ -125,7 +146,10 @@ test "saturating_add: normal addition" {
 ///|
 test "saturating_add: positive overflow clamps to MAX_VALUE" {
   // MAX_VALUE + 1 would overflow; should clamp
-  debug_inspect(saturating_add(@int64.MAX_VALUE, 1L), content="9223372036854775807")
+  debug_inspect(
+    saturating_add(@int64.MAX_VALUE, 1L),
+    content="9223372036854775807",
+  )
   // MAX_VALUE + large positive should also clamp
   debug_inspect(
     saturating_add(@int64.MAX_VALUE, 3600000L),

@@ -226,7 +226,7 @@ pub fn parse_duration(
     // If not a digit, check for "ago"
     match s.get_char(pos) {
       Some(ch) =>
-        if !(ch.is_ascii_digit()) {
+        if !ch.is_ascii_digit() {
           // Check for "ago" modifier
           if try_match_word(s, pos, "ago") {
             group_ms = -group_ms
@@ -285,7 +285,7 @@ pub fn parse_duration(
       pos += 3
     }
   }
-  if !(parsed_any) {
+  if !parsed_any {
     raise ParseError("no duration segments found in: " + input)
   }
   // Flush the remaining group

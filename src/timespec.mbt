@@ -174,7 +174,7 @@ pub fn parse_timespec(
           match seg_sign_char {
             Some('+') => {
               // Explicit +: flush current group and start a new one
-              if !(in_first_group) || has_duration {
+              if !in_first_group || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
                   checked_mul(
@@ -191,7 +191,7 @@ pub fn parse_timespec(
             }
             Some('-') => {
               // Explicit -: flush current group and start a new one
-              if !(in_first_group) || has_duration {
+              if !in_first_group || has_duration {
                 total_duration_ms = checked_add(
                   total_duration_ms,
                   checked_mul(
@@ -281,7 +281,7 @@ pub fn parse_timespec(
   // Restore leading sign consumed in Phase 1
   let mut has_raw_epoch = false
   let mut raw_epoch_ms = 0L
-  let raw_candidate = if datetime_str.length() > 0 && !(has_duration) {
+  let raw_candidate = if datetime_str.length() > 0 && !has_duration {
     match leading_sign_char {
       Some(c) => c.to_string() + datetime_str
       None => datetime_str
@@ -315,25 +315,22 @@ pub fn parse_timespec(
   // ===== Phase 5: Build EpochTime =====
   // `@` alone with no duration/datetime/time-of-day → Absolute(now)
   if has_at &&
-    !(has_duration) &&
-    !(has_datetime) &&
-    !(has_raw_epoch) &&
+    !has_duration &&
+    !has_datetime &&
+    !has_raw_epoch &&
     time_of_day_ms is None {
     let now_ms = now().reinterpret_as_int64()
     return Some(Absolute(EpochTime(now_ms - epoch.0), Duration(0L)))
   }
-  if !(has_duration) &&
-    !(has_datetime) &&
-    !(has_raw_epoch) &&
+  if !has_duration &&
+    !has_datetime &&
+    !has_raw_epoch &&
     time_of_day_ms is None &&
-    !(has_at) {
+    !has_at {
     raise ParseError("no duration or datetime found in: " + input)
   }
   // Reject mode check: duration only with no datetime/time-of-day/raw epoch
-  if needs_sign &&
-    !(has_datetime) &&
-    !(has_raw_epoch) &&
-    time_of_day_ms is None {
+  if needs_sign && !has_datetime && !has_raw_epoch && time_of_day_ms is None {
     raise ParseError("missing sign in timespec: " + input)
   }
   // Determine the base epoch_ms
@@ -358,7 +355,7 @@ pub fn parse_timespec(
         None => default_tz_offset
       }
       if has_datetime {
-        if !(effective_tod_tz.equal_offset(effective_dt_tz)) {
+        if !effective_tod_tz.equal_offset(effective_dt_tz) {
           raise ParseError("ambiguous timezone offset")
         }
       }
@@ -538,7 +535,7 @@ fn is_four_digits_at_sv(s : StringView, pos : Int) -> Bool {
   }
   for i in 0..<4 {
     match s.get_char(pos + i) {
-      Some(c) => if !(c.is_ascii_digit()) { return false }
+      Some(c) => if !c.is_ascii_digit() { return false }
       None => return false
     }
   }
@@ -570,7 +567,7 @@ fn find_datetime_end_sv(s : StringView, start : Int) -> Int {
           }
           // space: may act as T separator in datetime. End if next char is not a digit
           if c == ' ' {
-            if !(is_digit_at(s, pos + 1)) {
+            if !is_digit_at(s, pos + 1) {
               break
             }
           }
@@ -613,7 +610,7 @@ fn probe_tz_offset_sv(s : StringView, sign_pos : Int) -> Int {
     Some('m') =>
       match s.get_char(pos + 1) {
         Some('s') => return sign_pos
-        Some(c) => if !(c.is_ascii_digit()) { return sign_pos }
+        Some(c) => if !c.is_ascii_digit() { return sign_pos }
         None => return sign_pos
       }
     Some('u') | Some('n') | Some('\u03BC') => return sign_pos
@@ -675,7 +672,7 @@ fn is_signed_digits(s : String) -> Bool {
   }
   while i < sv.length() {
     match sv.get_char(i) {
-      Some(c) => if !(c.is_ascii_digit()) { return false }
+      Some(c) => if !c.is_ascii_digit() { return false }
       None => return false
     }
     i += 1

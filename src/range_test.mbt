@@ -402,7 +402,6 @@ test "parse_range: no arguments" {
     r,
     content=(
       #|{ since: None, until: None }
-
     ),
   )
 }

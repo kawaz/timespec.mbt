@@ -131,14 +131,14 @@ fn resolve_anchor(
 ) -> (TimeSpec, TimeSpec) {
   let s_abs = since_ts.is_absolute()
   let u_abs = until_ts.is_absolute()
-  if s_abs && !(u_abs) {
+  if s_abs && !u_abs {
     // since is Absolute -> recalculate until relative to since
     let resolved = resolve_relative_with_anchor(
       until_ts,
       since_ts.to_epoch_ms(),
     )
     (since_ts, resolved)
-  } else if u_abs && !(s_abs) {
+  } else if u_abs && !s_abs {
     // until is Absolute -> recalculate since relative to until
     let resolved = resolve_relative_with_anchor(
       since_ts,

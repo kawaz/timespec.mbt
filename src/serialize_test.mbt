@@ -8,7 +8,6 @@ test "to_cli_string: Absolute" {
     ts.to_cli_string(),
     content=(
       #|"2024-01-01T00:00:00Z"
-
     ),
   )
 }
@@ -23,7 +22,6 @@ test "to_cli_string: Relative positive" {
     ts.to_cli_string(),
     content=(
       #|"+5m"
-
     ),
   )
 }
@@ -38,7 +36,6 @@ test "to_cli_string: Relative negative" {
     ts.to_cli_string(),
     content=(
       #|"-5m"
-
     ),
   )
 }
@@ -53,7 +50,6 @@ test "to_cli_string: Relative zero" {
     ts.to_cli_string(),
     content=(
       #|"+0s"
-
     ),
   )
 }
@@ -69,7 +65,6 @@ test "to_cli_string: Relative large" {
     ts.to_cli_string(),
     content=(
       #|"+1h30m"
-
     ),
   )
 }
@@ -85,7 +80,6 @@ test "format_duration: weeks and days" {
     ts.to_cli_string(),
     content=(
       #|"+1w2d"
-
     ),
   )
 }
@@ -101,7 +95,6 @@ test "format_duration: all units" {
     ts.to_cli_string(),
     content=(
       #|"+1h30m45s500ms"
-
     ),
   )
 }
@@ -116,7 +109,6 @@ test "format_duration: ms only" {
     ts.to_cli_string(),
     content=(
       #|"+500ms"
-
     ),
   )
 }
@@ -131,7 +123,6 @@ test "to_cli_string: Absolute with milliseconds" {
     ts.to_cli_string(),
     content=(
       #|"2024-01-01T00:00:00.500Z"
-
     ),
   )
 }
@@ -148,9 +139,12 @@ test "format_duration: Int64.min_value does not overflow" {
   )
   let result = ts.to_cli_string()
   // Should start with "-" (negative duration)
-  debug_inspect(result[:1].to_string(), content=(
-    #|"-"
-  ))
+  debug_inspect(
+    result[:1].to_string(),
+    content=(
+      #|"-"
+    ),
+  )
   // Should NOT start with "+-" or be "+0s" (which would indicate overflow)
   assert_true(result != "+0s")
   assert_true(result != "+-0s")
@@ -178,7 +172,6 @@ test "to_cli_string: with custom epoch" {
     ts.to_cli_string(epoch=snowflake_epoch),
     content=(
       #|"2010-11-04T01:42:54.657Z"
-
     ),
   )
 }
