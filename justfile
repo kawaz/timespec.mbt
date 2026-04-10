@@ -32,4 +32,4 @@ test-all:
     moon test --target all
 
 # Pre-release check
-release-check: fmt info check test
+release-check: fmt info check test-all
