@@ -388,6 +388,24 @@ test "parse_range: none~5m" {
 }
 
 ///|
+test "parse_timespec: empty string is error" {
+  let r = try? @timespec.parse_timespec("", now=test_now)
+  debug_inspect(
+    r,
+    content="Err(ParseError(\"empty timespec string\"))",
+  )
+}
+
+///|
+test "parse_timespec: whitespace only is error" {
+  let r = try? @timespec.parse_timespec("   ", now=test_now)
+  debug_inspect(
+    r,
+    content="Err(ParseError(\"empty timespec string\"))",
+  )
+}
+
+///|
 test "parse_range: 5m~none" {
   let r = @timespec.parse_range(
     input="5m~none",

@@ -487,3 +487,59 @@ test "parse_duration: mixed long and short units" {
     ),
   )
 }
+
+///|
+test "parse_duration: overflow detection" {
+  // 非常に大きな数値で parse_number のオーバーフロー検出
+  let r1 = try? @timespec.parse_duration("9999999999999999999ms")
+  debug_inspect(
+    r1,
+    content="Err(ParseError(\"number too large\"))",
+  )
+  // checked_mul でオーバーフロー検出 (15250284453 * 604800000 > Int64.MAX)
+  let r2 = try? @timespec.parse_duration("15250284453w")
+  debug_inspect(
+    r2,
+    content="Err(ParseError(\"duration overflow\"))",
+  )
+  // checked_mul でオーバーフロー検出 (99999999999999h * 3600000 > Int64.MAX)
+  let r3 = try? @timespec.parse_duration("99999999999999h")
+  debug_inspect(
+    r3,
+    content="Err(ParseError(\"duration overflow\"))",
+  )
+}
+
+///|
+test "parse_duration: special inputs" {
+  // 空文字列 → エラー
+  let r1 = try? @timespec.parse_duration("")
+  debug_inspect(
+    r1,
+    content="Err(ParseError(\"empty duration string\"))",
+  )
+  // 数値のみ（単位なし） → エラー
+  let r2 = try? @timespec.parse_duration("123")
+  debug_inspect(
+    r2,
+    content="Err(ParseError(\"missing unit after number in: 123\"))",
+  )
+  // 非常に小さい小数 → 1ms
+  debug_inspect(
+    @timespec.parse_duration("0.001s"),
+    content="Duration(1)",
+  )
+  // ゼロ値
+  debug_inspect(
+    @timespec.parse_duration("0s"),
+    content="Duration(0)",
+  )
+  debug_inspect(
+    @timespec.parse_duration("0m"),
+    content="Duration(0)",
+  )
+  debug_inspect(
+    @timespec.parse_duration("0h"),
+    content="Duration(0)",
+  )
+}

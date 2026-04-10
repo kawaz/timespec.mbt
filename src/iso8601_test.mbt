@@ -344,6 +344,54 @@ test "parse partial datetime: year-only and year-month are rejected" {
 }
 
 ///|
+test "datetime normalization: month=13 wraps to next year" {
+  // 2024-13-01 → 2025-01-01
+  let a = @timespec.default_parse_datetime("2024-13-01")
+  let b = @timespec.default_parse_datetime("2025-01-01")
+  assert_true(a == b)
+}
+
+///|
+test "datetime normalization: month=0 wraps to previous year" {
+  // 2024-00-01 → 2023-12-01
+  let a = @timespec.default_parse_datetime("2024-00-01")
+  let b = @timespec.default_parse_datetime("2023-12-01")
+  assert_true(a == b)
+}
+
+///|
+test "datetime normalization: Feb 30 in leap year" {
+  // 2024年は閏年。2月は29日まで。2024-02-30 → 2024-03-01
+  let a = @timespec.default_parse_datetime("2024-02-30")
+  let b = @timespec.default_parse_datetime("2024-03-01")
+  assert_true(a == b)
+}
+
+///|
+test "datetime normalization: hour=25" {
+  // 2024-01-01T25:00:00Z → 2024-01-02T01:00:00Z
+  let a = @timespec.default_parse_datetime("2024-01-01T25:00:00Z")
+  let b = @timespec.default_parse_datetime("2024-01-02T01:00:00Z")
+  assert_true(a == b)
+}
+
+///|
+test "datetime normalization: minute=60" {
+  // 2024-01-01T12:60:00Z → 2024-01-01T13:00:00Z
+  let a = @timespec.default_parse_datetime("2024-01-01T12:60:00Z")
+  let b = @timespec.default_parse_datetime("2024-01-01T13:00:00Z")
+  assert_true(a == b)
+}
+
+///|
+test "parse_datetime: empty string returns None" {
+  debug_inspect(
+    @timespec.default_parse_datetime(""),
+    content="None",
+  )
+}
+
+///|
 test "parse time-only formats" {
   // HH:MM
   let a = @timespec.default_parse_datetime("10:30")
