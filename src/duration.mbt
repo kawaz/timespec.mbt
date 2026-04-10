@@ -106,6 +106,13 @@ fn checked_mul(
   if a == 0L || b == 0L {
     return 0L
   }
+  // Guard against Int64::min_value / -1 trap:
+  // -1 * Int64::min_value overflows, and the subsequent result / a division
+  // triggers a WASM trap (integer overflow) instead of producing a wrong result.
+  let min_value = -9223372036854775807L - 1L
+  if (a == -1L && b == min_value) || (b == -1L && a == min_value) {
+    raise ParseError(msg)
+  }
   let result = a * b
   if result / a != b {
     raise ParseError(msg)
