@@ -1,7 +1,8 @@
 ///|
 test "parse_datetime: basic date" {
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
   debug_inspect(
-    @timespec.default_parse_datetime("2024-01-01"),
+    parse_utc("2024-01-01"),
     content=(
       #|Some(1704067200000)
     ),
@@ -10,8 +11,9 @@ test "parse_datetime: basic date" {
 
 ///|
 test "parse_datetime: date with time" {
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
   debug_inspect(
-    @timespec.default_parse_datetime("2024-01-01T12:00:00"),
+    parse_utc("2024-01-01T12:00:00"),
     content=(
       #|Some(1704110400000)
     ),
@@ -50,8 +52,9 @@ test "parse_datetime: date with timezone -05:00" {
 
 ///|
 test "parse_datetime: slash separator" {
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
   debug_inspect(
-    @timespec.default_parse_datetime("2024/01/01"),
+    parse_utc("2024/01/01"),
     content=(
       #|Some(1704067200000)
     ),
@@ -100,7 +103,6 @@ test "epoch_to_iso8601: basic UTC" {
     @timespec.epoch_to_iso8601(1704067200000L),
     content=(
       #|"2024-01-01T00:00:00Z"
-
     ),
   )
 }
@@ -111,7 +113,6 @@ test "epoch_to_iso8601: with milliseconds" {
     @timespec.epoch_to_iso8601(1704067200500L),
     content=(
       #|"2024-01-01T00:00:00.500Z"
-
     ),
   )
 }
@@ -122,7 +123,6 @@ test "epoch_to_iso8601: with Hour offset" {
     @timespec.epoch_to_iso8601(1704067200000L, tz_offset=Hour(9)),
     content=(
       #|"2024-01-01T09:00:00+09:00"
-
     ),
   )
 }
@@ -133,7 +133,6 @@ test "epoch_to_iso8601: with Min offset" {
     @timespec.epoch_to_iso8601(1704067200000L, tz_offset=Min(330)),
     content=(
       #|"2024-01-01T05:30:00+05:30"
-
     ),
   )
 }
@@ -144,7 +143,6 @@ test "epoch_to_iso8601: epoch zero" {
     @timespec.epoch_to_iso8601(0L),
     content=(
       #|"1970-01-01T00:00:00Z"
-
     ),
   )
 }
@@ -192,7 +190,6 @@ test "epoch_to_iso8601: negative epoch (pre-1970)" {
     @timespec.epoch_to_iso8601(-1000L),
     content=(
       #|"1969-12-31T23:59:59Z"
-
     ),
   )
 }
@@ -200,8 +197,9 @@ test "epoch_to_iso8601: negative epoch (pre-1970)" {
 ///|
 test "datetime normalization: day overflow" {
   // 2026-11-32 → 2026-12-02 (11月は30日)
-  let a = @timespec.default_parse_datetime("2026-11-32")
-  let b = @timespec.default_parse_datetime("2026-12-02")
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
+  let a = parse_utc("2026-11-32")
+  let b = parse_utc("2026-12-02")
   debug_inspect(
     a,
     content=(
@@ -220,8 +218,9 @@ test "datetime normalization: day overflow" {
 ///|
 test "datetime normalization: month overflow" {
   // 2026-13-01 → 2027-01-01
-  let a = @timespec.default_parse_datetime("2026-13-01")
-  let b = @timespec.default_parse_datetime("2027-01-01")
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
+  let a = parse_utc("2026-13-01")
+  let b = parse_utc("2027-01-01")
   debug_inspect(
     a,
     content=(
@@ -240,8 +239,9 @@ test "datetime normalization: month overflow" {
 ///|
 test "datetime normalization: second overflow" {
   // 13:50:60 → 13:51:00
-  let a = @timespec.default_parse_datetime("2026-01-01T13:50:60")
-  let b = @timespec.default_parse_datetime("2026-01-01T13:51:00")
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
+  let a = parse_utc("2026-01-01T13:50:60")
+  let b = parse_utc("2026-01-01T13:51:00")
   debug_inspect(
     a,
     content=(
@@ -260,8 +260,9 @@ test "datetime normalization: second overflow" {
 ///|
 test "datetime normalization: hour overflow" {
   // 25:00:00 → 翌日 01:00:00
-  let a = @timespec.default_parse_datetime("2026-01-01T25:00:00")
-  let b = @timespec.default_parse_datetime("2026-01-02T01:00:00")
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
+  let a = parse_utc("2026-01-01T25:00:00")
+  let b = parse_utc("2026-01-02T01:00:00")
   debug_inspect(
     a,
     content=(
@@ -286,7 +287,6 @@ test "epoch_to_iso8601 roundtrip" {
         @timespec.epoch_to_iso8601(ms),
         content=(
           #|"2024-06-15T10:30:45Z"
-
         ),
       )
     None => assert_true(false)
@@ -313,9 +313,10 @@ test "parse flexible date formats" {
 
 ///|
 test "parse compact datetime formats" {
+  let parse_utc = @timespec.make_parse_datetime(default_tz_offset=Utc)
   // YYYYMMDDTHHmmss
-  let b = @timespec.default_parse_datetime("20260301T120000")
-  let c = @timespec.default_parse_datetime("2026-03-01T12:00:00")
+  let b = parse_utc("20260301T120000")
+  let c = parse_utc("2026-03-01T12:00:00")
   debug_inspect(
     b,
     content=(
@@ -324,14 +325,14 @@ test "parse compact datetime formats" {
   )
   assert_true(b == c)
   // YYYYMMDDTHHmmssZ
-  let d = @timespec.default_parse_datetime("20260301T120000Z")
+  let d = parse_utc("20260301T120000Z")
   assert_true(d == c)
   // YYYYMMDD HHmmss
-  let e = @timespec.default_parse_datetime("20260301 120000")
+  let e = parse_utc("20260301 120000")
   assert_true(e == c)
   // YYYYMMDDTHHmm (秒なし)
-  let f = @timespec.default_parse_datetime("20260301T1200")
-  let g = @timespec.default_parse_datetime("2026-03-01T12:00:00")
+  let f = parse_utc("20260301T1200")
+  let g = parse_utc("2026-03-01T12:00:00")
   assert_true(f == g)
 }
 
