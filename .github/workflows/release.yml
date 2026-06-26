@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "VERSION"
+      - "moon.mod"
 
 permissions:
   contents: write
@@ -43,27 +43,14 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          CURRENT_VERSION=$(cat VERSION | tr -d '[:space:]')
+          CURRENT_VERSION=$(bump-semver get moon.mod -qq)
           echo "current=${CURRENT_VERSION}" >> "$GITHUB_OUTPUT"
 
-          # VERSION=0.0.0 (or empty) はプレースホルダとしてスキップ
+          # version=0.0.0 (or empty) はプレースホルダとしてスキップ
           if [ -z "$CURRENT_VERSION" ] || [ "$CURRENT_VERSION" = "0.0.0" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Placeholder version (${CURRENT_VERSION:-empty}); skipping release."
             exit 0
-          fi
-
-          # semver 形式の検証
-          if ! bump-semver get "$CURRENT_VERSION" -qq; then
-            echo "::error::Invalid VERSION format: ${CURRENT_VERSION}"
-            exit 1
-          fi
-
-          # moon.mod の version との整合性検証 (= 多重 source of truth の防止)
-          MOD_VERSION=$(grep '^version = ' moon.mod | sed -E 's/^version = "(.*)"$/\1/')
-          if [ "$CURRENT_VERSION" != "$MOD_VERSION" ]; then
-            echo "::error::VERSION (${CURRENT_VERSION}) does not match moon.mod version (${MOD_VERSION}). just bump-version で同期せよ。"
-            exit 1
           fi
 
           # 既存 tag より大きいか検証
@@ -75,11 +62,11 @@ jobs:
             echo "vcs get latest-tag exited ${LATEST_EXIT} (no SemVer tags yet); assuming first release"
           else
             set +e
-            bump-semver compare gt VERSION "$LATEST"
+            bump-semver compare gt moon.mod "$LATEST"
             CMP_EXIT=$?
             set -e
             case "$CMP_EXIT" in
-              0) ;;  # VERSION > latest tag: release 続行
+              0) ;;  # moon.mod version > latest tag: release 続行
               1)
                 echo "changed=false" >> "$GITHUB_OUTPUT"
                 echo "Version v${CURRENT_VERSION} is not greater than latest tag ${LATEST}; skipping release."

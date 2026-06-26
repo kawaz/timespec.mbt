@@ -95,7 +95,7 @@ promote:
 check-outdated-translations: ensure-clean
     bump-semver vcs outdated 'glob:**/*-ja.md' '$1/$2.md'
 
-# src/ or moon.mod が変わったら VERSION 上げ忘れを止める
+# src/ or moon.mod が変わったら moon.mod の version 上げ忘れを止める
 # test 専用追加 (*_wbtest.mbt / *_test.mbt) は bump 不要なので exclude
 check-version-bumped: (_check-version-bumped "src/" "moon.mod" "src/moon.pkg")
 
@@ -103,33 +103,13 @@ check-version-bumped: (_check-version-bumped "src/" "moon.mod" "src/moon.pkg")
 [script]
 _check-version-bumped *target_paths:
     if ! bump-semver vcs diff -q main@origin -- "$@" --excludes 'glob:src/**/*_wbtest.mbt' --excludes 'glob:src/**/*_test.mbt'; then
-        # 初回 release では origin/main に VERSION が無いので compare gt が exit 2 で返る (path not found)。
-        # その場合は「VERSION 新規追加 = bump 済」とみなして OK 扱い。
-        set +e
-        bump-semver compare gt VERSION vcs:main@origin 2>/dev/null
-        cmp_exit=$?
-        set -e
-        case "$cmp_exit" in
-            0) ;;  # VERSION > origin の VERSION: OK
-            2)
-                echo "Initial release: origin/main has no VERSION yet, treating as bumped"
-                ;;
-            *)
-                bump-semver compare gt VERSION vcs:main@origin  # 再度実行してエラーを表示
-                exit "$cmp_exit"
-                ;;
-        esac
+        bump-semver compare gt moon.mod vcs:main@origin
     fi
 
-# VERSION を bump (= patch/minor/major) して release commit を作成
-# VERSION + moon.mod の version フィールドを同期更新する
-[script]
+# moon.mod の version を bump (= patch/minor/major) して release commit を作成
 bump-version level="patch": ensure-clean
-    bump-semver "$1" VERSION --write --quiet
-    new=$(bump-semver get VERSION)
-    # moon.mod の version 行を同期
-    sed -i.bak -E "s/^version = \".*\"\$/version = \"${new}\"/" moon.mod && rm moon.mod.bak
-    bump-semver vcs commit -m "Release v${new}" VERSION moon.mod
+    bump-semver "$1" moon.mod --write --quiet
+    bump-semver vcs commit -m "Release v$(bump-semver get moon.mod)" moon.mod
 
 # push to origin/main with canonical gates
 push: check-on-default-branch ci check-outdated-translations check-version-bumped
@@ -137,6 +117,5 @@ push: check-on-default-branch ci check-outdated-translations check-version-bumpe
     @echo "[hint] gh-monitor:watch-workflow --sha $(bump-semver vcs get commit-id --rev main) --on-success release.yml 'just on-success-release' kawaz/timespec.mbt"
 
 # release.yml workflow が success になった時のフォローアクション
-# (現状は version 反映確認のみ。配布物が増えたら拡張する)
 on-success-release:
-    @echo "Released v$(bump-semver get VERSION)"
+    @echo "Released v$(bump-semver get moon.mod)"

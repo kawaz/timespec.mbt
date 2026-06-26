@@ -29,7 +29,7 @@ just を使用。`justfile` 参照（canonical: kawaz/bump-semver / kawaz/kuu.mb
 
 ```
 README.md, README-ja.md  # ユーザ向け窓口（英語版が canonical、ja は翻訳ペア）
-VERSION                  # semver 文字列、moon.mod の version と同期
+moon.mod                 # MoonBit パッケージマニフェスト（version はここが source-of-truth）
 src/                     # メイン実装
 docs/
   DESIGN.md, DESIGN-ja.md  # 総合設計書（ja が canonical）
