@@ -1,4 +1,4 @@
-# DR-005: TzOffset の範囲バリデーションと pub(all) 維持
+# DR-0005: TzOffset の範囲バリデーションと pub(all) 維持
 
 - **日付**: 2026-03-16
 - **ステータス**: Accepted

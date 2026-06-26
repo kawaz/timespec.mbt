@@ -10,11 +10,12 @@
 
 ## 記録先
 
-`docs/decision-records/DR-{番号}-ai-{タイトル}.md`
+`docs/decisions/DR-NNNN-ai-{タイトル}.md`
 
+- 番号は 4 桁ゼロパディング、既存 DR の連番
 - `ai-` プレフィックスで人間の議論を含まないAI単独判断であることを示す
 - ユーザとの議論を元にAIが咀嚼し設計や修正を行うケースはプレフィックス対象外
-- 番号は既存DRの連番
+- 起票後は `docs/decisions/INDEX.md` の Active セクションにも追加する
 
 ## 記録内容
 

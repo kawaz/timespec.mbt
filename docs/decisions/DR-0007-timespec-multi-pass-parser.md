@@ -1,4 +1,4 @@
-# DR-007: TimeSpec パーサのマルチパス方式への再設計
+# DR-0007: TimeSpec パーサのマルチパス方式への再設計
 
 - **日付**: 2026-03-16
 - **ステータス**: Accepted
@@ -60,7 +60,7 @@ Phase 1-3.5 で duration・@・time-of-day・raw epoch を除去した残りが 
 - 空 → datetime なし
 
 datetime パース時の TzOffset 回収:
-- `detect_tz_suffix` でパーサ非依存に元文字列の末尾から TZ サフィックスを検出（→ DR-009）
+- `detect_tz_suffix` でパーサ非依存に元文字列の末尾から TZ サフィックスを検出（→ DR-0009）
 - 内部パーサ・外部プラガブルパーサを問わず同一の仕組みで TZ 情報を回収
 - `parse_datetime` のシグネチャ `(String) -> Int64?` は変更なし
 

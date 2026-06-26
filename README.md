@@ -1,5 +1,7 @@
 # kawaz/timespec
 
+> English | [日本語](./README-ja.md)
+
 CLI-oriented time specification parser for MoonBit.
 
 Parses flexible time expressions like `5m`, `@1h30m`, `2026-03-15T12:00:00Z+5h`, `3 minutes ago` into structured `TimeSpec` values for `--since` / `--until` style CLI options.

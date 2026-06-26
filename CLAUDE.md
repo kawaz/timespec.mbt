@@ -10,30 +10,38 @@ MoonBit 製の CLI `--since` / `--until` 向け時間指定パーサライブラ
 
 ## ビルド・テスト
 
-just を使用。`justfile` 参照。
+just を使用。`justfile` 参照（canonical: kawaz/bump-semver / kawaz/kuu.mbt 系）。
 
-- `just` — check + test（デフォルト）
-- `just fmt` — フォーマット
-- `just check` — 型チェック（警告エラー扱い）
-- `just test` — テスト実行
-- `just test-update` — スナップショット更新
+- `just` — lint + test（デフォルト）
+- `just lint` — fmt-check + check（型チェック、警告エラー扱い）
+- `just fmt` — フォーマット自動修正
+- `just fmt-check` — フォーマット検査のみ
+- `just check` — 型チェック（`moon check --deny-warn`）
+- `just test` — テスト実行（native ターゲット）
 - `just test-all` — 全ターゲットでテスト実行
+- `just test-update` — スナップショット更新
+- `just bump-version [patch|minor|major]` — VERSION / moon.mod の version を進める
+- `just push` — gate 群を通過してから push（`bump-semver vcs push`）
 - `moon test -f "test name"` — 単一テスト実行（部分一致）
-- `moon test --target native` — ターゲット別テスト（native / js / all）
+- `moon test --target native` — ターゲット別テスト（native / js / wasm / wasm-gc / all）
 
 ## プロジェクト構造
 
 ```
-src/              # メイン実装
+README.md, README-ja.md  # ユーザ向け窓口（英語版が canonical、ja は翻訳ペア）
+VERSION                  # semver 文字列、moon.mod の version と同期
+src/                     # メイン実装
 docs/
-  DESIGN.md       # 総合設計書
-  decision-records/  # 設計判断記録（DR）
+  DESIGN.md, DESIGN-ja.md  # 総合設計書（ja が canonical）
+  decisions/               # 設計判断記録（DR-NNNN-...）
+    INDEX.md
 ```
 
 ## 設計資料
 
-- `docs/DESIGN.md` — 型設計、API、パース規則
-- `docs/decision-records/` — 設計判断の経緯（DR-003〜DR-009）
+- `docs/DESIGN-ja.md` / `docs/DESIGN.md` — 型設計、API、パース規則
+- `docs/decisions/INDEX.md` — DR 一覧
+- `docs/decisions/` — 設計判断の経緯（DR-0003〜DR-0009）
 
 ## アーキテクチャ
 

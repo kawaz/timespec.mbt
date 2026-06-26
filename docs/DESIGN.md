@@ -1,32 +1,34 @@
-# kawaz/timespec 設計書
+# kawaz/timespec Design Document
 
-CLI の `--since` / `--until` 向け時間指定パーサライブラリ。
+> English | [日本語](./DESIGN-ja.md)
 
-## 設計原則
+A time specification parser library for CLI `--since` / `--until` options.
 
-1. **CLI用途に特化** — 広大な日時ライブラリではなく、パース＋再シリアライズに集中
-2. **ミリ秒精度** — CLI 用途で十分な ms 精度に統一。シンプルな newtype で表現
-3. **プラガブル** — now、datetime パーサを差し替え可能
-4. **寛容パース、厳密内部表現** — 入力は広く受け付け、正規化して保持
-5. **再シリアライズで意図を保存** — Absolute/Relative の区別で「結果」vs「やり方」を表現
+## Design Principles
 
-## 型定義
+1. **Focused on CLI use** — Not a vast date/time library; concentrates on parsing and re-serialization
+2. **Millisecond precision** — Unified at ms precision, which is sufficient for CLI use. Represented as a simple newtype
+3. **Pluggable** — `now` and the datetime parser are replaceable
+4. **Lenient parsing, strict internal representation** — Accepts input broadly; normalizes for storage
+5. **Re-serialization preserves intent** — The Absolute/Relative distinction expresses "result" vs. "method"
 
-### Duration（期間）
+## Type Definitions
+
+### Duration
 
 ```moonbit
 pub(all) struct Duration(Int64)  // ミリ秒
 ```
 
-newtype。内部値はミリ秒。`Duration(5000L)` で構築、`d.0` で内部値にアクセス。
+A newtype. The internal value is in milliseconds. Construct with `Duration(5000L)`; access the inner value via `d.0`.
 
-### EpochTime（時点）
+### EpochTime
 
 ```moonbit
 pub(all) struct EpochTime(Int64)  // epoch からの経過ミリ秒
 ```
 
-Duration と対をなす概念。構造は同じだが「期間」ではなく「時点」を表す。
+A concept paired with Duration. The structure is the same, but it represents a "point in time" rather than a "duration."
 
 ### TimeSpec
 
@@ -37,12 +39,12 @@ pub(all) enum TimeSpec {
 }
 ```
 
-両バリアントが `(EpochTime, Duration)` を持つ。違いは**再シリアライズの挙動**:
-- `Relative` → `--since -8m`（「やり方」の共有。実行するたび結果が変わる）
-- `Absolute` → `--since 2025-03-15T00:56:14Z`（「結果」の共有。誰がいつ実行しても同じ）
+Both variants carry `(EpochTime, Duration)`. The difference lies in **re-serialization behavior**:
+- `Relative` → `--since -8m` (sharing the "method"; the result changes on each execution)
+- `Absolute` → `--since 2025-03-15T00:56:14Z` (sharing the "result"; identical no matter who runs it when)
 
-Duration フィールドはオフセットの元情報を保持する（例: `@5m` → Duration は `-5m`）。
-datetime のみの入力では Duration は `Duration(0L)`。
+The Duration field retains the original offset information (e.g., `@5m` → Duration is `-5m`).
+For datetime-only input, Duration is `Duration(0L)`.
 
 ### TimeRange
 
@@ -63,14 +65,14 @@ pub(all) enum Sign {
 }
 ```
 
-Sign は符号省略時のデフォルト解釈を呼び出し側が指定するためのパラメータ。
-`parse_duration` でも `parse` でも `default_sign` として受け取り、
-アプリケーションの文脈に応じて呼び出し側が選択する。
+`Sign` is a parameter by which the caller specifies the default interpretation when a sign is omitted.
+Both `parse_duration` and `parse` accept it as `default_sign`, allowing the caller to choose
+based on the application context.
 
-用途例:
-- ログ検索: `default_sign=Minus`（`--since 5m` → 5分前）
-- タイマー/予約: `default_sign=Plus`（`set_timer("3m")` → 3分後）
-- 過去/未来両方あり得るクエリ: `default_sign=Reject`（符号必須、曖昧さ排除）
+Example use cases:
+- Log search: `default_sign=Minus` (`--since 5m` → 5 minutes ago)
+- Timer/reservation: `default_sign=Plus` (`set_timer("3m")` → 3 minutes from now)
+- Queries that may go either way (past or future): `default_sign=Reject` (sign required; eliminates ambiguity)
 
 ### TzOffset
 
@@ -91,7 +93,7 @@ pub(all) suberror ParseError {
 } derive(Eq, Show)
 ```
 
-## 公開 API
+## Public API
 
 ```moonbit
 // Duration パース
@@ -176,53 +178,53 @@ pub fn TimeSpec::to_epoch_ms(self : TimeSpec) -> Int64
 pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 ```
 
-## パース仕様
+## Parse Specification
 
-### Duration パース
+### Duration Parsing
 
-#### 数値構文
-- 整数: `5m`, `300s`
-- 小数: `1.5h` → 5400s
-- アンダースコア区切り: `3_600_000ms`
-- 複合: `1_000.5s`（小数 + アンダースコア両立）
+#### Numeric Syntax
+- Integer: `5m`, `300s`
+- Decimal: `1.5h` → 5400s
+- Underscore separators: `3_600_000ms`
+- Combined: `1_000.5s` (decimals and underscores together)
 
-#### サポート単位
+#### Supported Units
 
-| 単位 | エイリアス | 意味 | ミリ秒換算 |
+| Unit | Aliases | Meaning | Milliseconds |
 |---|---|---|---|
-| `w` | `week`, `weeks` | 週 | × 604_800_000 |
-| `d` | `day`, `days` | 日 | × 86_400_000 |
-| `h` | `hour`, `hours` | 時 | × 3_600_000 |
-| `m` | `min`, `minute`, `minutes` | 分 | × 60_000 |
-| `s` | `sec`, `second`, `seconds` | 秒 | × 1_000 |
-| `ms` | `millisecond`, `milliseconds` | ミリ秒 | × 1 |
+| `w` | `week`, `weeks` | week | × 604_800_000 |
+| `d` | `day`, `days` | day | × 86_400_000 |
+| `h` | `hour`, `hours` | hour | × 3_600_000 |
+| `m` | `min`, `minute`, `minutes` | minute | × 60_000 |
+| `s` | `sec`, `second`, `seconds` | second | × 1_000 |
+| `ms` | `millisecond`, `milliseconds` | millisecond | × 1 |
 
-`y`, `month` は非対応（可変長で曖昧）。
+`y` and `month` are unsupported (variable length, ambiguous).
 
-#### 複合表現
-- `1h30m45s` — 連結可能
-- `1hour 30m` — 短縮形とエイリアスの混在可
-- `1h5m1h` = `2h5m` — 重複合算、順序無視
+#### Composite Expressions
+- `1h30m45s` — concatenable
+- `1hour 30m` — shortened forms and aliases can be mixed
+- `1h5m1h` = `2h5m` — duplicates accumulate; order doesn't matter
 
-#### `ago` 修飾子（グループレベル反転）
+#### `ago` Modifier (Group-level Inversion)
 
-`ago` は直前の **グループ** の符号を反転する。グループとは明示的 `+`/`-` で区切られた連続セグメントの塊。
+`ago` inverts the sign of the immediately preceding **group**. A group is a cluster of consecutive segments delimited by explicit `+`/`-` signs.
 
-- 暗黙連結（スペースのみ）はグループを分けない
-- `ago` の後は新しいグループが始まる（group_sign = +1）
-- 先頭符号（`+`/`-`/`default_sign`）は最後に全体に適用され、`ago` とは独立
+- Implicit concatenation (whitespace only) does not split groups
+- A new group begins after `ago` (group_sign = +1)
+- The leading sign (`+`/`-`/`default_sign`) is applied to the whole at the end and is independent of `ago`
 
-| 入力 | 解釈 | 結果 |
+| Input | Interpretation | Result |
 |---|---|---|
-| `3 minutes ago` | グループ[3m]を反転 | -3m |
-| `1 hour 30 minutes ago` | グループ[1h+30m]を反転 | -90m |
-| `1 hour + 30 minutes ago` | グループ[1h] + グループ[30m]を反転 | 30m |
-| `1 hour - 30 minutes ago` | グループ[1h] - グループ[30m]を反転 | 90m |
-| `30 minutes ago 1h` | グループ[30m]を反転, 新グループ[1h] | 30m |
-| `30 minutes ago - 1h` | グループ[30m]を反転, -グループ[1h] | -90m |
-| `-5m ago` | 先頭`-`で全体反転, グループ[5m]を反転 → +5m | +5m |
+| `3 minutes ago` | invert group [3m] | -3m |
+| `1 hour 30 minutes ago` | invert group [1h+30m] | -90m |
+| `1 hour + 30 minutes ago` | group [1h] + invert group [30m] | 30m |
+| `1 hour - 30 minutes ago` | group [1h] - invert group [30m] | 90m |
+| `30 minutes ago 1h` | invert group [30m], new group [1h] | 30m |
+| `30 minutes ago - 1h` | invert group [30m], -group [1h] | -90m |
+| `-5m ago` | leading `-` inverts everything, invert group [5m] → +5m | +5m |
 
-`ago` は `default_sign` とは独立。`default_sign=Plus` でも `5m ago` = `-5m`。
+`ago` is independent of `default_sign`. Even with `default_sign=Plus`, `5m ago` = `-5m`.
 
 #### default_sign
 
@@ -230,72 +232,72 @@ pub fn TzOffset::equal_offset(self : TzOffset, other : TzOffset) -> Bool
 |---|---|---|---|
 | Minus | -5m | +5m | -5m |
 | Plus | +5m | +5m | -5m |
-| Reject | エラー | +5m | -5m |
+| Reject | error | +5m | -5m |
 
-### TimeSpec パース
+### TimeSpec Parsing
 
-1つの timespec パートの構文:
+Syntax of a single timespec part:
 
 ```
 [@] [sign] (duration | datetime | time-of-day | keyword)+ [@]
 ```
 
-- `@` は前置・後置どちらも可（`@-5h` = `-5h@`）。セグメント間にも配置可能（`1h@30m` = `@1h30m`）
-- duration と datetime はインターリーブ可能（ただし datetime は最大1つ）
-- duration は datetime に対するオフセットとして加算される
-- datetime がなければ now 基準の相対指定
-- `@HH:MM[:SS[.mmm]][TZ]` で今日の指定時刻にリセット（`@` 必須）
+- `@` may appear either as a prefix or suffix (`@-5h` = `-5h@`). It can also be placed between segments (`1h@30m` = `@1h30m`)
+- `duration` and `datetime` may be interleaved (but at most one `datetime`)
+- `duration` is added as an offset to the `datetime`
+- Without a datetime, the spec is relative to `now`
+- `@HH:MM[:SS[.mmm]][TZ]` resets to the specified time today (the `@` is required)
 
-#### キーワード
+#### Keywords
 
-| キーワード | 大文字小文字 | 結果 |
+| Keyword | Case | Result |
 |---|---|---|
-| `now` | 不問 | `Relative(now, Duration(0))` — 現在時刻（相対） |
-| `@now` | 不問 | `Absolute(now, Duration(0))` — 現在時刻（絶対） |
-| `@` | — | `@now` と同等（`@` のみの場合） |
-| `none`, `null`, `nil` | 不問 | `None` を返す（TimeSpec? の None。明示的リセット用） |
+| `now` | case-insensitive | `Relative(now, Duration(0))` — current time (relative) |
+| `@now` | case-insensitive | `Absolute(now, Duration(0))` — current time (absolute) |
+| `@` | — | equivalent to `@now` (when `@` appears alone) |
+| `none`, `null`, `nil` | case-insensitive | returns `None` (the None of TimeSpec?; explicit reset) |
 
-`none`/`null`/`nil` は `parse_range` のチルダ記法と組み合わせて片側だけリセットする用途（例: `none~5m`, `5m~nil`）。
+`none`/`null`/`nil` are intended for resetting one side when combined with `parse_range`'s tilde notation (e.g., `none~5m`, `5m~nil`).
 
-#### マルチパスパーサ
+#### Multi-pass Parser
 
-`parse_timespec` は入力文字列を6フェーズで処理する:
+`parse_timespec` processes the input string in six phases:
 
-1. **Phase 1: Leading sign + Duration segment extraction** — 先頭符号の検出と duration セグメント（数値+単位+ago）の抽出・累積。非 duration 部分はバッファに蓄積
-2. **Phase 2: `@` マーカー検出** — Phase 1 の走査中に `@` の有無を記録
-3. **Phase 3: Time-of-day パターンの検出** — `@` 付きで残り文字列に `:` を含む場合、`HH:MM[:SS[.mmm]][TZ]` として解釈。TzOffset 整合性チェックも実施
-4. **Phase 3.5: Raw epoch ms の検出** — `@` 付きで残り文字列が `[+-]?[0-9]+` のみの場合、raw epoch ms として解釈（`date -d @EPOCH` 規約。例: `@1704110400000`, `@-100`）
-5. **Phase 4: datetime パース** — 残りの非 duration 文字列を `parse_datetime` でパース。TZ 情報は `detect_tz_suffix` でパーサ非依存に回収
-6. **Phase 5-6: EpochTime / TimeSpec の構築** — 基準 epoch の決定、time-of-day リセット、duration 加算、Absolute/Relative の判定
+1. **Phase 1: Leading sign + Duration segment extraction** — Detect the leading sign and extract/accumulate duration segments (numeric + unit + ago). Non-duration parts are accumulated in a buffer
+2. **Phase 2: `@` marker detection** — Record the presence of `@` during the Phase 1 scan
+3. **Phase 3: Time-of-day pattern detection** — If `@` is present and the remaining string contains `:`, interpret as `HH:MM[:SS[.mmm]][TZ]`. TzOffset consistency check is also performed
+4. **Phase 3.5: Raw epoch ms detection** — If `@` is present and the remaining string consists only of `[+-]?[0-9]+`, interpret as raw epoch ms (`date -d @EPOCH` convention; e.g., `@1704110400000`, `@-100`)
+5. **Phase 4: datetime parsing** — Parse the remaining non-duration string via `parse_datetime`. TZ information is recovered with `detect_tz_suffix` in a parser-independent way
+6. **Phase 5-6: EpochTime / TimeSpec construction** — Determine the base epoch, apply time-of-day reset, add the duration, decide Absolute/Relative
 
-#### 入力例
+#### Input Examples
 
-以下は `default_sign=Minus` を前提とした例。`default_sign=Plus`（デフォルト）の場合は符号なし duration の方向が反転する。
+The examples below assume `default_sign=Minus`. With `default_sign=Plus` (default), the direction of unsigned durations is reversed.
 
-| 入力 | 解釈（default_sign=Minus） |
+| Input | Interpretation (default_sign=Minus) |
 |---|---|
-| `5m` | now - 5m（Relative） |
-| `@5m` | now - 5m（Absolute） |
-| `-5h@` | now - 5h（Absolute。`@-5h` と同じ） |
-| `2026-12-02T13:51:00` | datetime（Absolute） |
-| `2026-12-02T13:51:00+5h30m` | datetime + 5h30m（Absolute） |
-| `30m2026-12-02T13:51:00` | datetime - 30m（Absolute。default_sign=Minus） |
-| `30m2026-12-02T13:51:00+5h30m` | datetime - 30m + 5h30m（Absolute） |
-| `@30m2026-12-02T13:51:00+5h30m` | 同上（datetime があれば暗黙 Absolute） |
-| `@1704110400000` | raw epoch ms（Absolute） |
-| `@-100` | raw epoch ms（負値、Absolute） |
-| `@09:30` | 今日の 09:30 UTC（Absolute） |
-| `@09:30+09:00` | 今日の 09:30 JST（Absolute） |
+| `5m` | now - 5m (Relative) |
+| `@5m` | now - 5m (Absolute) |
+| `-5h@` | now - 5h (Absolute; same as `@-5h`) |
+| `2026-12-02T13:51:00` | datetime (Absolute) |
+| `2026-12-02T13:51:00+5h30m` | datetime + 5h30m (Absolute) |
+| `30m2026-12-02T13:51:00` | datetime - 30m (Absolute; default_sign=Minus) |
+| `30m2026-12-02T13:51:00+5h30m` | datetime - 30m + 5h30m (Absolute) |
+| `@30m2026-12-02T13:51:00+5h30m` | same as above (implicitly Absolute when a datetime is present) |
+| `@1704110400000` | raw epoch ms (Absolute) |
+| `@-100` | raw epoch ms (negative value, Absolute) |
+| `@09:30` | today's 09:30 UTC (Absolute) |
+| `@09:30+09:00` | today's 09:30 JST (Absolute) |
 
-**制約**: 1パートに datetime は最大1つ。2つ以上の datetime はパースエラー。
+**Constraint**: At most one datetime per part. Two or more datetimes produce a parse error.
 
-### TimeRange パース
+### TimeRange Parsing
 
-`parse_range` は3つの入力方式をサポートする。
+`parse_range` supports three input methods.
 
-#### 入力方式
+#### Input Methods
 
-**方式1: 2引数（推奨）** — `since` / `until` を個別に指定
+**Method 1: Two arguments (recommended)** — Specify `since` / `until` separately
 
 ```moonbit
 // CLI の --since / --until に直接対応
@@ -304,7 +306,7 @@ parse_range(since="5m", default_sign=Minus)     // since のみ
 parse_range(until="3m", default_sign=Minus)     // until のみ
 ```
 
-**方式2: チルダ(`~`)区切り形式** — `input` にチルダ区切りの `since~until` 文字列を渡す
+**Method 2: Tilde (`~`)-delimited form** — Pass a tilde-separated `since~until` string in `input`
 
 ```moonbit
 // 単一引数で since/until を表現（~ で分割される）
@@ -314,56 +316,56 @@ parse_range(input="~3m", default_sign=Minus)    // since なし, until="3m"
 parse_range(input="5m", default_sign=Minus)     // ~ なし → since="5m"
 ```
 
-`input` と `since`/`until` の同時指定は `ParseError`。
+Specifying `input` together with `since`/`until` raises `ParseError`.
 
-#### 動作
+#### Behavior
 
-#### パース動作
+#### Parsing Behavior
 
-- `since` が空でなければ `parse_timespec(since, ...)` でパース → `TimeRange.since`
-- `until` が空でなければ `parse_timespec(until, ...)` でパース → `TimeRange.until`
-- 両方空なら `TimeRange { since: None, until: None }` を返す
+- If `since` is non-empty, parse with `parse_timespec(since, ...)` → `TimeRange.since`
+- If `until` is non-empty, parse with `parse_timespec(until, ...)` → `TimeRange.until`
+- If both are empty, return `TimeRange { since: None, until: None }`
 
-#### アンカー解決規則
+#### Anchor Resolution Rules
 
-両方指定された場合のみアンカー解決が行われる。ルールは **Mixed のみ**:
+Anchor resolution runs only when both are specified. The rule applies **only in the Mixed case**:
 
-- **Mixed（片方だけ Absolute）** → 絶対側が anchor。相対側を anchor 基準で再計算（明示符号に従う）
-- **同種（両方 Relative or 両方 Absolute）** → 独立解決（各自 now 基準で既にパース済み）
+- **Mixed (only one side is Absolute)** → the absolute side becomes the anchor. The relative side is recalculated against the anchor (following its explicit sign)
+- **Same kind (both Relative or both Absolute)** → resolved independently (each is already parsed against `now`)
 
-#### 符号と計算の関係
+#### Relationship Between Sign and Computation
 
-Mixed の場合:
-- 明示符号は計算に反映（反転レンジも許容）
+In the Mixed case:
+- Explicit signs are reflected in the computation (inverted ranges are also allowed)
 - `since="@5m", until="+3m"` → since=A(now-5m), until=R(since+3m)
 - `since="@5m", until="-3m"` → since=A(now-5m), until=R(since-3m)
 
-同種の場合:
-- 各パートが独立に now 基準で解決済み
+In the same-kind case:
+- Each part has already been resolved independently against `now`
 - `since="5m", until="3m"` → since=R(now-5m), until=R(now-3m)
 
-**swap オプション**: `swap=true` でパーサ側の s<=u 保証。デフォルトはアプリ判断。
+**swap option**: With `swap=true`, the parser ensures s<=u. By default, this is left to the application.
 
-### パース例一覧
+### Parse Examples
 
-以下は `default_sign=Minus` を前提とした例。
+The examples below assume `default_sign=Minus`.
 
-| since | until | since 結果 | until 結果 |
+| since | until | since result | until result |
 |---|---|---|---|
-| `5m` | (空) | Relative(now-5m, -5m) | None |
-| (空) | `5m` | None | Relative(now-5m, -5m) |
+| `5m` | (empty) | Relative(now-5m, -5m) | None |
+| (empty) | `5m` | None | Relative(now-5m, -5m) |
 | `5m` | `3m` | Relative(now-5m, -5m) | Relative(now-3m, -3m) |
 | `5m` | `+3m` | Relative(now-5m, -5m) | Relative(now+3m, +3m) |
 | `5m` | `@3m` | Relative(until-5m, -5m) | Absolute(now-3m) |
-| `@5m` | (空) | Absolute(now-5m) | None |
+| `@5m` | (empty) | Absolute(now-5m) | None |
 | `@5m` | `3m` | Absolute(now-5m) | Relative(since-3m, -3m) |
 | `@5m` | `+3m` | Absolute(now-5m) | Relative(since+3m, +3m) |
 | `@5m` | `@3m` | Absolute(now-5m) | Absolute(now-3m) |
 | `@5m` | `@+3m` | Absolute(now-5m) | Absolute(now+3m) |
 
-### TzOffset パース
+### TzOffset Parsing
 
-| 入力 | 結果 |
+| Input | Result |
 |---|---|
 | `""`, `"Z"`, `"UTC"`, `"GMT"` | `Utc` |
 | `"9"`, `"+9"`, `"+09"` | `Hour(9)` |
@@ -373,71 +375,71 @@ Mixed の場合:
 | `"5h30m"`, `"+5h30m"` | `Min(330)` |
 | `"-5h"` | `Hour(-5)` |
 
-### ISO 8601 パース
+### ISO 8601 Parsing
 
-組み込みの最小限パーサ。プラガブルに差し替え可能。
+A built-in minimal parser. Pluggably replaceable.
 
-受け入れ形式:
-- `YYYY-MM-DD` — TZ なし → **Local として解釈**（デフォルト）。**YMD（年月日）すべて必須**
-- `YYYY-MM-DDTHH:MM:SS` — TZ なし → **Local として解釈**
+Accepted formats:
+- `YYYY-MM-DD` — without TZ → **interpreted as Local** (default). **YMD (year/month/day) are all required**
+- `YYYY-MM-DDTHH:MM:SS` — without TZ → **interpreted as Local**
 - `YYYY-MM-DDTHH:MM:SSZ`
 - `YYYY-MM-DDTHH:MM:SS±HH:MM`
-- `HH:MM[:SS[.mmm]][TZ]` — time-only（日付は 1970-01-01 として解釈）
-- 区切り `/` も許容
+- `HH:MM[:SS[.mmm]][TZ]` — time-only (date is interpreted as 1970-01-01)
+- `/` is also accepted as a separator
 
-**拒否される形式**:
-- `YYYY`（年のみ）— エラー
-- `YYYY-MM`（年月のみ）— エラー
+**Rejected formats**:
+- `YYYY` (year only) — error
+- `YYYY-MM` (year-month only) — error
 
-部分日付を拒否する理由: `+/-HH` 形式の短い TZ オフセット（`+09`, `-5` 等）と部分日付の末尾（`-01`, `-9`）が構文的に曖昧になるため。YMD すべて必須とすることで曖昧さを排除する（→ DR-009）。
+Reason for rejecting partial dates: short `+/-HH` TZ offsets (`+09`, `-5`, etc.) and the trailing components of partial dates (`-01`, `-9`) become syntactically ambiguous. Requiring full YMD removes the ambiguity (→ DR-0009).
 
-**TZ なし日時の扱い**: デフォルトでは TZ 情報のない入力を **ローカルタイムゾーン** として解釈する（ISO 8601 準拠）。
-`default_tz_offset` パラメータで変更可能（例: `default_tz_offset=Utc` で UTC 固定）。
+**Handling of TZ-less date-times**: By default, input without TZ information is interpreted as the **local time zone** (ISO 8601 compliant).
+This is configurable via the `default_tz_offset` parameter (e.g., `default_tz_offset=Utc` to fix it to UTC).
 
-### TZ サフィックス検出（detect_tz_suffix）
+### TZ Suffix Detection (detect_tz_suffix)
 
-`detect_tz_suffix(String) -> TzOffset?` は文字列末尾から TZ サフィックスを検出するパーサ非依存のユーティリティ。
+`detect_tz_suffix(String) -> TzOffset?` is a parser-independent utility that detects a TZ suffix from the end of a string.
 
-検出パターン:
-| パターン | 例 | 結果 |
+Detection patterns:
+| Pattern | Example | Result |
 |---|---|---|
 | `Z` / `z` | `...Z` | `Utc` |
 | `±HH:MM` | `...+09:00` | `Hour(9)` |
 | `±HHMM` | `...+0900` | `Hour(9)` |
 | `±HH` / `±H` | `...+09`, `...+9` | `Hour(9)` |
 
-**`±HH` / `±H` の安全条件**: 符号の前が digit かつ文字列中にコロン（時刻成分）が含まれる場合のみ検出。これにより `2024-01-15` の `-15` を TZ と誤認しない。部分日付が禁止されているため、`2024-01` のような入力は来ないことが前提。
+**Safety condition for `±HH` / `±H`**: Detected only when the character before the sign is a digit and the string contains a colon (a time component). This avoids misreading `-15` in `2024-01-15` as a TZ. Since partial dates are forbidden, inputs like `2024-01` are assumed never to arrive.
 
-**用途**: Phase 4 で `parse_datetime`（カスタムパーサ含む）のパース結果から TZ 情報を回収する。`parse_iso8601` の内部 TZ パースとは独立に機能するため、プラガブルなカスタム datetime パーサを使用しても TZ 整合性チェックが動作する。`parse_tz_offset`（文字列全体を TZ として解釈）とは異なり、datetime 文字列の末尾部分のみを対象とする。
+**Purpose**: In Phase 4, it recovers TZ information from the result of `parse_datetime` (including custom parsers). Because it works independently of `parse_iso8601`'s internal TZ parsing, the TZ consistency check still works when a pluggable custom datetime parser is in use. Unlike `parse_tz_offset` (which interprets the entire string as a TZ), it targets only the trailing portion of a datetime string.
 
-### 日付正規化
+### Date Normalization
 
-パースは寛容、内部は厳密に正規化（Go mktime スタイル）。
+Parsing is lenient; the internal form is strictly normalized (Go mktime style).
 
-段階的正規化:
-1. 月を 1-12 に正規化（month=0 → year-1, month=12）
-2. 年月に対して日を正規化（日数溢れ → 翌月）
-3. 時分秒をミリ秒ベースで加算
+Staged normalization:
+1. Normalize the month to 1-12 (month=0 → year-1, month=12)
+2. Normalize the day against the resulting year/month (overflow → next month)
+3. Add hours/minutes/seconds on a millisecond basis
 
-## 再シリアライズ
+## Re-serialization
 
 ### TimeSpec::to_cli_string()
 
-- `Absolute(instant, _)` → instant の epoch から ISO 8601 UTC 文字列（例: `2025-03-15T00:56:14Z`）
-- `Relative(_, duration)` → 符号付き duration 文字列（例: `-8m`, `+1h30m`）
+- `Absolute(instant, _)` → an ISO 8601 UTC string from the epoch of `instant` (e.g., `2025-03-15T00:56:14Z`)
+- `Relative(_, duration)` → a signed duration string (e.g., `-8m`, `+1h30m`)
 
 ### epoch_to_iso8601()
 
-- デフォルト: UTC (Z)
-- `tz_offset=Hour(9)` → `+09:00` 付き
-- `tz_offset=Local` → ローカルTZ取得して適用
+- Default: UTC (Z)
+- `tz_offset=Hour(9)` → with `+09:00`
+- `tz_offset=Local` → obtain and apply the local TZ
 
-## 設計判断の記録
+## Decision Records
 
-詳細は `docs/decision-records/` を参照:
-- DR-003: カスタム epoch パラメータ
-- DR-005: TzOffset の範囲バリデーションと pub(all) 維持
-- DR-006: 設計決定まとめ（parse_range 方式、ago、EpochTime 命名、FFI 等）
-- DR-007: TimeSpec マルチパスパーサ
-- DR-008: 追加の設計決定（@冪等性、Eq 方針、部分日付、Local デフォルト、raw epoch）
-- DR-009: 部分日付の禁止と detect_tz_suffix の新設
+See [`docs/decisions/`](./decisions/INDEX.md) for details:
+- DR-0003: Custom epoch parameter
+- DR-0005: TzOffset range validation and retaining pub(all)
+- DR-0006: Design decisions summary (parse_range method, ago, EpochTime naming, FFI, etc.)
+- DR-0007: TimeSpec multi-pass parser
+- DR-0008: Additional design decisions (@ idempotency, Eq policy, partial dates, Local default, raw epoch)
+- DR-0009: Forbidding partial dates and introducing detect_tz_suffix
