@@ -73,14 +73,8 @@ ensure-clean:
 
 # default branch (= main) bookmark に居るかを確認
 [private]
-[script]
 check-on-default-branch:
-    if ! bump-semver vcs is on-default-branch; then
-        cur=$(bump-semver vcs get current-branch 2>/dev/null || echo "(ambiguous)")
-        bn=$(bump-semver vcs get default-branch)
-        printf >&2 "⚠ 現在 '%s' bookmark/branch にいます。%s に合流してから push してください\n  1. just sync         # %s@origin に rebase\n  2. just promote      # %s bookmark を current commit に forward\n" "$cur" "$bn" "$bn" "$bn"
-        exit 1
-    fi
+    bump-semver vcs is on-default-branch
 
 # 現在の worktree を default branch (= origin/<default>) に rebase
 sync:
@@ -100,11 +94,8 @@ check-outdated-translations: ensure-clean
 check-version-bumped: (_check-version-bumped "src/" "moon.mod" "src/moon.pkg")
 
 [private]
-[script]
 _check-version-bumped *target_paths:
-    if ! bump-semver vcs diff -q main@origin -- "$@" --excludes 'glob:src/**/*_wbtest.mbt' --excludes 'glob:src/**/*_test.mbt'; then
-        bump-semver compare gt moon.mod vcs:main@origin
-    fi
+    if ! bump-semver vcs diff -q main@origin -- "$@" --excludes 'glob:src/**/*_wbtest.mbt' --excludes 'glob:src/**/*_test.mbt'; then bump-semver compare gt moon.mod vcs:main@origin; fi
 
 # moon.mod の version を bump (= patch/minor/major) して release commit を作成
 bump-version level="patch": ensure-clean
