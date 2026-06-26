@@ -386,10 +386,7 @@ test "datetime normalization: minute=60" {
 
 ///|
 test "parse_datetime: empty string returns None" {
-  debug_inspect(
-    @timespec.default_parse_datetime(""),
-    content="None",
-  )
+  debug_inspect(@timespec.default_parse_datetime(""), content="None")
 }
 
 ///|
