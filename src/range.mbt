@@ -62,8 +62,8 @@ pub fn parse_range(
   if input.length() > 0 {
     match input.split_once("~") {
       Some((s, u)) => {
-        since = s.to_string()
-        until = u.to_string()
+        since = s.to_owned()
+        until = u.to_owned()
       }
       None => since = input // No tilde -> treat as since
     }

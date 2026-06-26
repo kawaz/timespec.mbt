@@ -221,7 +221,7 @@ pub fn parse_timespec(
           // Not a duration segment -> non-duration
           scan_pos = seg_sign_start
           let non_dur_end = scan_non_duration(s, scan_pos)
-          non_duration_buf.write_string(s[scan_pos:non_dur_end].to_string())
+          non_duration_buf.write_string(s[scan_pos:non_dur_end].to_owned())
           scan_pos = non_dur_end
           continue
         }
@@ -239,7 +239,7 @@ pub fn parse_timespec(
           None => break
         }
       } else {
-        non_duration_buf.write_string(s[scan_pos:non_dur_end].to_string())
+        non_duration_buf.write_string(s[scan_pos:non_dur_end].to_owned())
         scan_pos = non_dur_end
       }
       continue
@@ -257,10 +257,7 @@ pub fn parse_timespec(
   // ===== Phase 2: @ marker detection (has_at already set during scan) =====
   // ===== Phase 3: Time-of-day pattern detection =====
   let remaining_raw = non_duration_buf.to_string()
-  let remaining_no_at = remaining_raw
-    .replace(old="@", new="")
-    .trim()
-    .to_string()
+  let remaining_no_at = remaining_raw.replace(old="@", new="").trim().to_owned()
   let mut time_of_day_ms : Int64? = None
   let mut tz_offset_timepart : TzOffset? = None
   let mut datetime_str : String = remaining_no_at
@@ -503,11 +500,11 @@ fn split_datetime_and_timeofday(s : String) -> (String, String) {
   if dt_start >= 0 {
     // Find the end of the datetime part
     let dt_end = find_datetime_end_sv(sv, dt_start)
-    let dt_part = sv[dt_start:dt_end].to_string().trim().to_string()
+    let dt_part = sv[dt_start:dt_end].to_owned().trim().to_owned()
     // Check if there is a time-of-day in non-datetime parts
-    let before = sv[0:dt_start].to_string().trim().to_string()
+    let before = sv[0:dt_start].to_owned().trim().to_owned()
     let after : String = if dt_end < sv.length() {
-      sv[dt_end:sv.length()].to_string().trim().to_string()
+      sv[dt_end:sv.length()].to_owned().trim().to_owned()
     } else {
       ""
     }

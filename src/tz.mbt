@@ -75,11 +75,11 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
   // UTC/GMT prefix → strip and re-parse remainder
   // Handles: "UTC", "GMT", "UTC+0900", "GMT+9", "GMT +09:00" etc.
   if len >= 3 && (lower[:3] == "utc" || lower[:3] == "gmt") {
-    let rest = s[3:].to_string().trim()
+    let rest = s[3:].to_owned().trim()
     if rest.length() == 0 {
       return Utc
     }
-    return parse_tz_offset(rest.to_string())
+    return parse_tz_offset(rest.to_owned())
   }
   // local → Local
   if lower == "local" {
@@ -102,7 +102,7 @@ pub fn parse_tz_offset(input : String) -> TzOffset raise ParseError {
   let is_duration = contains_duration_unit(s, pos)
   let total_minutes : Int = if is_duration {
     // Pass the original trimmed string to parse_duration
-    let trimmed = input.trim().to_string()
+    let trimmed = input.trim().to_owned()
     let dur = parse_duration(trimmed, default_sign=Plus)
     let ms = dur.0
     // TZ offset is in minutes. Error if not evenly divisible
@@ -197,7 +197,7 @@ fn parse_numeric_offset(
       }
       if pos < s.length() {
         raise ParseError(
-          "unexpected trailing characters in timezone offset: " + s.to_string(),
+          "unexpected trailing characters in timezone offset: " + s.to_owned(),
         )
       }
       sign * (first_num * 60 + mm)
@@ -207,8 +207,7 @@ fn parse_numeric_offset(
         // 1-2 digits: hours only
         if pos < s.length() {
           raise ParseError(
-            "unexpected trailing characters in timezone offset: " +
-            s.to_string(),
+            "unexpected trailing characters in timezone offset: " + s.to_owned(),
           )
         }
         sign * first_num * 60
@@ -216,8 +215,7 @@ fn parse_numeric_offset(
         // 4 digits: HHMM
         if pos < s.length() {
           raise ParseError(
-            "unexpected trailing characters in timezone offset: " +
-            s.to_string(),
+            "unexpected trailing characters in timezone offset: " + s.to_owned(),
           )
         }
         let hh = first_num / 100

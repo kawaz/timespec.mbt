@@ -31,21 +31,21 @@ pub let week : Duration = Duration(604_800_000L)
 /// Adds two durations.
 
 ///|
-pub impl Add for Duration with add(a, b) {
+pub impl Add for Duration with fn add(a, b) {
   Duration(a.0 + b.0)
 }
 
 /// Subtracts one duration from another.
 
 ///|
-pub impl Sub for Duration with sub(a, b) {
+pub impl Sub for Duration with fn sub(a, b) {
   Duration(a.0 - b.0)
 }
 
 /// Negates a duration, reversing its direction.
 
 ///|
-pub impl Neg for Duration with neg(self) {
+pub impl Neg for Duration with fn neg(self) {
   Duration(-self.0)
 }
 
@@ -434,7 +434,7 @@ fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
               "unknown unit at position " +
               pos.to_string() +
               " in: " +
-              s.to_string(),
+              s.to_owned(),
             )
           }
         _ => (week.0, pos + 1) // 'w'
@@ -451,7 +451,7 @@ fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
               "unknown unit at position " +
               pos.to_string() +
               " in: " +
-              s.to_string(),
+              s.to_owned(),
             )
           }
         _ => (day.0, pos + 1) // 'd'
@@ -468,7 +468,7 @@ fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
               "unknown unit at position " +
               pos.to_string() +
               " in: " +
-              s.to_string(),
+              s.to_owned(),
             )
           }
         _ => (hour.0, pos + 1) // 'h'
@@ -492,7 +492,7 @@ fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
               "unknown unit at position " +
               pos.to_string() +
               " in: " +
-              s.to_string(),
+              s.to_owned(),
             )
           }
         _ => (minute.0, pos + 1) // 'm'
@@ -511,7 +511,7 @@ fn parse_unit(s : StringView, pos : Int) -> (Int64, Int) raise ParseError {
               "unknown unit at position " +
               pos.to_string() +
               " in: " +
-              s.to_string(),
+              s.to_owned(),
             )
           }
         _ => (second.0, pos + 1) // 's'
