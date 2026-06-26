@@ -100,12 +100,21 @@ test "parse_duration: ms unit" {
 
 ///|
 test "parse_duration: sub-ms units are errors" {
-  let r1 = try? @timespec.parse_duration("500us")
-  assert_true(r1 is Err(_))
-  let r2 = try? @timespec.parse_duration("1000ns")
-  assert_true(r2 is Err(_))
-  let r3 = try? @timespec.parse_duration("500\u03BCs")
-  assert_true(r3 is Err(_))
+  try @timespec.parse_duration("500us") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for 500us")
+  }
+  try @timespec.parse_duration("1000ns") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for 1000ns")
+  }
+  try @timespec.parse_duration("500\u03BCs") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for 500\u03BCs")
+  }
 }
 
 ///|
@@ -165,13 +174,17 @@ test "parse_duration: sign with default_sign=Minus" {
 ///|
 test "parse_duration: sign with default_sign=Reject" {
   // 符号なしはエラー
-  let result = try? @timespec.parse_duration("5m", default_sign=Reject)
-  debug_inspect(
-    result,
-    content=(
-      #|Err(ParseError("missing sign in duration: 5m"))
-    ),
-  )
+  try @timespec.parse_duration("5m", default_sign=Reject) |> ignore catch {
+    e =>
+      debug_inspect(
+        e,
+        content=(
+          #|ParseError("missing sign in duration: 5m")
+        ),
+      )
+  } noraise {
+    _ => fail("expected error for unsigned with default_sign=Reject")
+  }
   // 符号ありはOK
   debug_inspect(
     @timespec.parse_duration("+5m", default_sign=Reject),
@@ -222,14 +235,23 @@ test "parse_duration: whitespace" {
 ///|
 test "parse_duration: errors" {
   // 空文字
-  let r1 = try? @timespec.parse_duration("")
-  assert_true(r1 is Err(_))
+  try @timespec.parse_duration("") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for empty input")
+  }
   // 年は非対応
-  let r2 = try? @timespec.parse_duration("5y")
-  assert_true(r2 is Err(_))
+  try @timespec.parse_duration("5y") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for 5y")
+  }
   // 数字のみ（ユニットなし）
-  let r3 = try? @timespec.parse_duration("5")
-  assert_true(r3 is Err(_))
+  try @timespec.parse_duration("5") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for 5")
+  }
 }
 
 ///|
@@ -491,55 +513,47 @@ test "parse_duration: mixed long and short units" {
 ///|
 test "parse_duration: overflow detection" {
   // 非常に大きな数値で parse_number のオーバーフロー検出
-  let r1 = try? @timespec.parse_duration("9999999999999999999ms")
-  debug_inspect(
-    r1,
-    content="Err(ParseError(\"number too large\"))",
-  )
+  try @timespec.parse_duration("9999999999999999999ms") |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"number too large\")")
+  } noraise {
+    _ => fail("expected overflow error for 9999999999999999999ms")
+  }
   // checked_mul でオーバーフロー検出 (15250284453 * 604800000 > Int64.MAX)
-  let r2 = try? @timespec.parse_duration("15250284453w")
-  debug_inspect(
-    r2,
-    content="Err(ParseError(\"duration overflow\"))",
-  )
+  try @timespec.parse_duration("15250284453w") |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"duration overflow\")")
+  } noraise {
+    _ => fail("expected overflow error for 15250284453w")
+  }
   // checked_mul でオーバーフロー検出 (99999999999999h * 3600000 > Int64.MAX)
-  let r3 = try? @timespec.parse_duration("99999999999999h")
-  debug_inspect(
-    r3,
-    content="Err(ParseError(\"duration overflow\"))",
-  )
+  try @timespec.parse_duration("99999999999999h") |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"duration overflow\")")
+  } noraise {
+    _ => fail("expected overflow error for 99999999999999h")
+  }
 }
 
 ///|
 test "parse_duration: special inputs" {
   // 空文字列 → エラー
-  let r1 = try? @timespec.parse_duration("")
-  debug_inspect(
-    r1,
-    content="Err(ParseError(\"empty duration string\"))",
-  )
+  try @timespec.parse_duration("") |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"empty duration string\")")
+  } noraise {
+    _ => fail("expected error for empty input")
+  }
   // 数値のみ（単位なし） → エラー
-  let r2 = try? @timespec.parse_duration("123")
-  debug_inspect(
-    r2,
-    content="Err(ParseError(\"missing unit after number in: 123\"))",
-  )
+  try @timespec.parse_duration("123") |> ignore catch {
+    e =>
+      debug_inspect(
+        e,
+        content="ParseError(\"missing unit after number in: 123\")",
+      )
+  } noraise {
+    _ => fail("expected error for 123 (no unit)")
+  }
   // 非常に小さい小数 → 1ms
-  debug_inspect(
-    @timespec.parse_duration("0.001s"),
-    content="Duration(1)",
-  )
+  debug_inspect(@timespec.parse_duration("0.001s"), content="Duration(1)")
   // ゼロ値
-  debug_inspect(
-    @timespec.parse_duration("0s"),
-    content="Duration(0)",
-  )
-  debug_inspect(
-    @timespec.parse_duration("0m"),
-    content="Duration(0)",
-  )
-  debug_inspect(
-    @timespec.parse_duration("0h"),
-    content="Duration(0)",
-  )
+  debug_inspect(@timespec.parse_duration("0s"), content="Duration(0)")
+  debug_inspect(@timespec.parse_duration("0m"), content="Duration(0)")
+  debug_inspect(@timespec.parse_duration("0h"), content="Duration(0)")
 }

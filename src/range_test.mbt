@@ -315,12 +315,18 @@ test "parse_range: both empty returns empty range" {
 
 ///|
 test "parse_range: invalid input raises error" {
-  let r = try? @timespec.parse_range(
-    since="invalid_xyz",
-    now=range_test_now,
-    default_sign=Minus,
-  )
-  assert_true(r is Err(_))
+  try
+    @timespec.parse_range(
+      since="invalid_xyz",
+      now=range_test_now,
+      default_sign=Minus,
+    )
+    |> ignore
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for invalid input")
+  }
 }
 
 ///|
@@ -386,13 +392,19 @@ test "parse_range: input~ no tilde (since only)" {
 
 ///|
 test "parse_range: input and since/until together is error" {
-  let r = try? @timespec.parse_range(
-    input="99d~99d",
-    since="5m",
-    now=range_test_now,
-    default_sign=Minus,
-  )
-  assert_true(r is Err(_))
+  try
+    @timespec.parse_range(
+      input="99d~99d",
+      since="5m",
+      now=range_test_now,
+      default_sign=Minus,
+    )
+    |> ignore
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error when input and since/until both given")
+  }
 }
 
 ///|

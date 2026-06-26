@@ -140,7 +140,7 @@ test "format_duration: Int64.min_value does not overflow" {
   let result = ts.to_cli_string()
   // Should start with "-" (negative duration)
   debug_inspect(
-    result[:1].to_string(),
+    result[:1].to_owned(),
     content=(
       #|"-"
     ),

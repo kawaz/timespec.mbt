@@ -113,14 +113,24 @@ test "parse_timespec: negative duration (Relative)" {
 
 ///|
 test "parse_timespec: invalid prefix before datetime" {
-  let r = try? @timespec.parse_timespec("xxx2024-01-01T12:00:00Z", now=test_now)
-  assert_true(r is Err(_))
+  try
+    @timespec.parse_timespec("xxx2024-01-01T12:00:00Z", now=test_now) |> ignore
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for invalid prefix")
+  }
 }
 
 ///|
 test "parse_timespec: garbage after datetime" {
-  let r = try? @timespec.parse_timespec("2024-01-01Zgarbage", now=test_now)
-  assert_true(r is Err(_))
+  try
+    @timespec.parse_timespec("2024-01-01Zgarbage", now=test_now) |> ignore
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for garbage after datetime")
+  }
 }
 
 ///|
@@ -140,8 +150,13 @@ test "parse_timespec: Reject with datetime (no error)" {
 
 ///|
 test "parse_timespec: Reject with unsigned duration (error)" {
-  let r = try? @timespec.parse_timespec("5m", now=test_now, default_sign=Reject)
-  assert_true(r is Err(_))
+  try
+    @timespec.parse_timespec("5m", now=test_now, default_sign=Reject) |> ignore
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for unsigned duration with Reject")
+  }
 }
 
 ///|
@@ -389,20 +404,20 @@ test "parse_range: none~5m" {
 
 ///|
 test "parse_timespec: empty string is error" {
-  let r = try? @timespec.parse_timespec("", now=test_now)
-  debug_inspect(
-    r,
-    content="Err(ParseError(\"empty timespec string\"))",
-  )
+  try @timespec.parse_timespec("", now=test_now) |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"empty timespec string\")")
+  } noraise {
+    _ => fail("expected error for empty timespec")
+  }
 }
 
 ///|
 test "parse_timespec: whitespace only is error" {
-  let r = try? @timespec.parse_timespec("   ", now=test_now)
-  debug_inspect(
-    r,
-    content="Err(ParseError(\"empty timespec string\"))",
-  )
+  try @timespec.parse_timespec("   ", now=test_now) |> ignore catch {
+    e => debug_inspect(e, content="ParseError(\"empty timespec string\")")
+  } noraise {
+    _ => fail("expected error for whitespace-only timespec")
+  }
 }
 
 ///|

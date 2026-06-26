@@ -10,7 +10,7 @@ extern "C" fn tzset() = "tzset"
 ///|
 /// ヘルパー: MoonBit 文字列を null 終端 UTF-8 Bytes に変換
 fn to_c_string(s : String) -> Bytes {
-  let buf = @buffer.new()
+  let buf = Buffer()
   buf.write_string_utf8(s.view())
   buf.write_byte(b'\x00')
   buf.to_bytes()

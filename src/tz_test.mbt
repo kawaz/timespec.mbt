@@ -216,14 +216,20 @@ test "parse_tz_offset: GMT+offset" {
 
 ///|
 test "parse_tz_offset: trailing garbage error" {
-  let r = try? @timespec.parse_tz_offset("+09:00abc")
-  assert_true(r is Err(_))
+  try @timespec.parse_tz_offset("+09:00abc") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for trailing garbage")
+  }
 }
 
 ///|
 test "parse_tz_offset: seconds not valid as tz" {
-  let r = try? @timespec.parse_tz_offset("30s")
-  assert_true(r is Err(_))
+  try @timespec.parse_tz_offset("30s") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for seconds")
+  }
 }
 
 ///|
@@ -291,10 +297,19 @@ test "parse_tz_offset: boundary values" {
 
 ///|
 test "parse_tz_offset: out of range error" {
-  let r1 = try? @timespec.parse_tz_offset("+25")
-  assert_true(r1 is Err(_))
-  let r2 = try? @timespec.parse_tz_offset("-25")
-  assert_true(r2 is Err(_))
-  let r3 = try? @timespec.parse_tz_offset("+99")
-  assert_true(r3 is Err(_))
+  try @timespec.parse_tz_offset("+25") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for +25")
+  }
+  try @timespec.parse_tz_offset("-25") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for -25")
+  }
+  try @timespec.parse_tz_offset("+99") |> ignore catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected error for +99")
+  }
 }
