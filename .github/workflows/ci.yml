@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: chawyehsu/setup-moonup@v1
+      - run: moon version --all
       - run: moon update
       - run: moon fmt --check
       - run: moon check --deny-warn
@@ -28,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: chawyehsu/setup-moonup@v1
+      - run: moon version --all
       - run: moon update
       - name: Run tests
         env:
