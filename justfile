@@ -84,10 +84,24 @@ sync:
 promote:
     bump-semver vcs promote
 
-# 翻訳ペアの freshness check (= ja 正本が更新されたら en も追従しているか検証)
+# 翻訳ペア (README + docs/DESIGN の ja/en) の鮮度 + 相互リンクヘッダ整合
 [private]
-check-outdated-translations: ensure-clean
+check-translations: ensure-clean check-translation-freshness (_check-translation-headers "README") (_check-translation-headers "docs/DESIGN")
+
+# ja 正本が更新されたら en 翻訳先も追従しているか (commit timestamp 比較)
+[private]
+check-translation-freshness:
     bump-semver vcs outdated 'glob:**/*-ja.md' '$1/$2.md'
+
+# ja/en bilingual ヘッダ (= 冒頭 5 行の `> [English](...) | 日本語` 等) の存在を grep -qF で検証
+# {{name}} は basename を含む path 部分 (例: "README" / "docs/DESIGN")
+# {{file_name(name)}} は basename のみ (例: "README" / "DESIGN")
+[private]
+_check-translation-headers name:
+    test -f {{ name }}-ja.md
+    test -f {{ name }}.md
+    head -5 {{ name }}-ja.md | grep -qF "> [English](./{{ file_name(name) }}.md) | 日本語"
+    head -5 {{ name }}.md    | grep -qF "> English | [日本語](./{{ file_name(name) }}-ja.md)"
 
 # src/ or moon.mod が変わったら moon.mod の version 上げ忘れを止める
 # test 専用追加 (*_wbtest.mbt / *_test.mbt) は bump 不要なので exclude
@@ -103,7 +117,7 @@ bump-version level="patch": ensure-clean
     bump-semver vcs commit -m "Release v$(bump-semver get moon.mod)" moon.mod
 
 # push to origin/main with canonical gates
-push: check-on-default-branch ci check-outdated-translations check-version-bumped
+push: check-on-default-branch ci check-translations check-version-bumped
     bump-semver vcs push --branch main --jj-bookmark-auto-advance
     @echo "[hint] gh-monitor:watch-workflow --sha $(bump-semver vcs get commit-id --rev main) --on-success release.yml 'just on-success-release' kawaz/timespec.mbt"
 
