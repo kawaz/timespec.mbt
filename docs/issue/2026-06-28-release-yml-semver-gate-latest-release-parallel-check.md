@@ -3,7 +3,7 @@ title: release.yml semver gate に latest-release 並列 check 追加 (DR-0039 c
 status: open
 category: request
 created: 2026-06-28T20:10:40+09:00
-last_read:
+last_read: 2026-06-28T21:56:32+09:00
 open_entered: 2026-06-28T20:10:40+09:00
 wip_entered:
 blocked_entered:
