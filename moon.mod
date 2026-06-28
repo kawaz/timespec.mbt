@@ -12,4 +12,6 @@ keywords = [ "time", "datetime", "duration", "range", "span", "cli", "parser" ]
 
 description = "CLI-oriented time specification parser for MoonBit"
 
-source = "src"
+options(
+  source: "src",
+)
